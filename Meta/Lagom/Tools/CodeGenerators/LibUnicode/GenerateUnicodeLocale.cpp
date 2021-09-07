@@ -62,6 +62,7 @@ struct UnicodeLocaleData {
     Vector<String> variants;
     Vector<String> currencies;
     Vector<String> keywords;
+    HashMap<String, String> keyword_aliases;
     Vector<String> list_pattern_types;
     Vector<String> list_pattern_styles;
     HashMap<String, String> language_aliases;
@@ -307,6 +308,92 @@ static void parse_locale_scripts(String locale_path, UnicodeLocaleData& locale_d
     });
 }
 
+static Optional<StringView> canonicalize_keyword_key(StringView key)
+{
+    // FIXME: Currently, the CLDR JSON export does not contain the full set of BCP47 data. This causes
+    //        some unfortunate conflicts for implementing ECMA-402. For example, the CLDR currently
+    //        lists the Unicode locale extension key "collation" with its full name, rather than its
+    //        canonical abbreviation "co". Until BCP47 is included in the JSON data, the expected
+    //        mappings are hard-coded here. See: https://unicode-org.atlassian.net/browse/CLDR-14571
+    //        and https://github.com/unicode-org/cldr-staging/blob/master/production/common/bcp47/collation.xml.
+    static HashMap<StringView, StringView> alias_map {
+        { "calendar"sv, "ca"sv },
+        { "colAlternate"sv, "ka"sv },
+        { "colBackwards"sv, "kb"sv },
+        { "colCaseFirst"sv, "kf"sv },
+        { "colCaseLevel"sv, "kc"sv },
+        { "colHiraganaQuaternary"sv, "kh"sv },
+        { "collation"sv, "co"sv },
+        { "colNormalization"sv, "kk"sv },
+        { "colNumeric"sv, "kn"sv },
+        { "colReorder"sv, "kr"sv },
+        { "colStrength"sv, "ks"sv },
+        { "variableTop"sv, "vt"sv },
+    };
+
+    return alias_map.get(key);
+}
+
+static Optional<StringView> canonicalize_keyword_value(StringView value)
+{
+    // FIXME: Similar to canonicalize_keyword_key, some keyword values must also be hard-coded.
+    static HashMap<StringView, StringView> alias_map {
+        { "dictionary"sv, "dict"sv },
+        { "gb2312han"sv, "gb2312"sv },
+        { "identical"sv, "identic"sv },
+        { "no"sv, "false"sv },
+        { "non-ignorable"sv, "noignore"sv },
+        { "phonebook"sv, "phonebk"sv },
+        { "primary"sv, "level1"sv },
+        { "quarternary"sv, "level4"sv },
+        { "quaternary"sv, "level4"sv },
+        { "secondary"sv, "level2"sv },
+        { "tertiary"sv, "level3"sv },
+        { "traditional"sv, "trad"sv },
+        { "yes"sv, "true"sv },
+    };
+
+    return alias_map.get(value);
+}
+
+static void parse_locale_keywords(String locale_path, UnicodeLocaleData& locale_data, Locale& locale)
+{
+    LexicalPath locale_display_names_path(move(locale_path));
+    locale_display_names_path = locale_display_names_path.append("localeDisplayNames.json"sv);
+    VERIFY(Core::File::exists(locale_display_names_path.string()));
+
+    auto locale_display_names_file_or_error = Core::File::open(locale_display_names_path.string(), Core::OpenMode::ReadOnly);
+    VERIFY(!locale_display_names_file_or_error.is_error());
+
+    auto locale_display_names = JsonParser(locale_display_names_file_or_error.value()->read_all()).parse();
+    VERIFY(locale_display_names.has_value());
+
+    auto const& main_object = locale_display_names->as_object().get("main"sv);
+    auto const& locale_object = main_object.as_object().get(locale_display_names_path.parent().basename());
+    auto const& locale_display_names_object = locale_object.as_object().get("localeDisplayNames"sv);
+    auto const& types_object = locale_display_names_object.as_object().get("types"sv);
+
+    types_object.as_object().for_each_member([&](auto const& key, JsonValue const& values) {
+        if (!locale_data.keywords.contains_slow(key))
+            locale_data.keywords.append(key);
+
+        if (auto alias = canonicalize_keyword_key(key); alias.has_value())
+            locale_data.keyword_aliases.set(*alias, key);
+
+        Vector<StringView> keyword_values;
+        values.as_object().for_each_member([&](auto const& value, JsonValue const&) {
+            keyword_values.append(value);
+
+            if (auto alias = canonicalize_keyword_value(value); alias.has_value())
+                keyword_values.append(*alias);
+        });
+
+        StringBuilder builder;
+        builder.join(',', keyword_values);
+        locale.keywords.set(key, builder.build());
+    });
+}
+
 static void parse_locale_list_patterns(String misc_path, UnicodeLocaleData& locale_data, Locale& locale)
 {
     LexicalPath list_patterns_path(move(misc_path));
@@ -477,6 +564,7 @@ static void parse_all_locales(String core_path, String locale_names_path, String
         parse_locale_languages(locale_path, locale);
         parse_locale_territories(locale_path, locale);
         parse_locale_scripts(locale_path, locale_data, locale);
+        parse_locale_keywords(locale_path, locale_data, locale);
     }
 
     while (misc_iterator.has_next()) {
@@ -519,7 +607,7 @@ static void generate_unicode_locale_header(Core::File& file, UnicodeLocaleData& 
     StringBuilder builder;
     SourceGenerator generator { builder };
 
-    auto generate_enum = [&](StringView name, StringView default_, Vector<String>& values) {
+    auto generate_enum = [&](StringView name, StringView default_, Vector<String>& values, HashMap<String, String> const& aliases = {}) {
         quick_sort(values);
 
         generator.set("name", name);
@@ -538,6 +626,13 @@ enum class @name@ : @underlying@ {)~~~");
             generator.set("value", format_identifier(name, value));
             generator.append(R"~~~(
     @value@,)~~~");
+        }
+
+        for (auto const& alias : aliases) {
+            generator.set("alias", format_identifier(name, alias.key));
+            generator.set("value", format_identifier(name, alias.value));
+            generator.append(R"~~~(
+    @alias@ = @value@,)~~~");
         }
 
         generator.append(R"~~~(
@@ -562,7 +657,7 @@ namespace Unicode {
     generate_enum("Territory"sv, {}, locale_data.territories);
     generate_enum("ScriptTag"sv, {}, locale_data.scripts);
     generate_enum("Currency"sv, {}, locale_data.currencies);
-    generate_enum("Key"sv, {}, locale_data.keywords);
+    generate_enum("Key"sv, {}, locale_data.keywords, locale_data.keyword_aliases);
     generate_enum("Variant"sv, {}, locale_data.variants);
     generate_enum("ListPatternType"sv, {}, locale_data.list_pattern_types);
     generate_enum("ListPatternStyle"sv, {}, locale_data.list_pattern_styles);
@@ -968,7 +1063,7 @@ Optional<StringView> get_locale_@enum_snake@_mapping(StringView locale, StringVi
 )~~~");
     };
 
-    auto append_from_string = [&](StringView enum_title, StringView enum_snake, Vector<String> const& values) {
+    auto append_from_string = [&](StringView enum_title, StringView enum_snake, Vector<String> const& values, HashMap<String, String> const& aliases = {}) {
         generator.set("enum_title", enum_title);
         generator.set("enum_snake", enum_snake);
 
@@ -980,6 +1075,14 @@ Optional<@enum_title@> @enum_snake@_from_string(StringView const& @enum_snake@)
         for (auto const& value : values) {
             generator.set("key"sv, value);
             generator.set("value"sv, format_identifier(enum_title, value));
+
+            generator.append(R"~~~(
+        { "@key@"sv, @enum_title@::@value@ },)~~~");
+        }
+
+        for (auto const& alias : aliases) {
+            generator.set("key"sv, alias.key);
+            generator.set("value"sv, format_identifier(enum_title, alias.value));
 
             generator.append(R"~~~(
         { "@key@"sv, @enum_title@::@value@ },)~~~");
@@ -1049,7 +1152,7 @@ Optional<StringView> resolve_@enum_snake@_alias(StringView const& @enum_snake@)
     append_from_string("Currency"sv, "currency"sv, locale_data.currencies);
 
     append_mapping_search("Key"sv, "key"sv, "s_keywords"sv);
-    append_from_string("Key"sv, "key"sv, locale_data.keywords);
+    append_from_string("Key"sv, "key"sv, locale_data.keywords, locale_data.keyword_aliases);
 
     append_alias_search("variant"sv, locale_data.variant_aliases);
     append_alias_search("subdivision"sv, locale_data.subdivision_aliases);
