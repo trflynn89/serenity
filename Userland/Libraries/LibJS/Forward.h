@@ -77,6 +77,7 @@
     __JS_ENUMERATE(Float64Array, float64_array, Float64ArrayPrototype, Float64ArrayConstructor, double)
 
 #define JS_ENUMERATE_INTL_OBJECTS                                                               \
+    __JS_ENUMERATE(Collator, collator, CollatorPrototype, CollatorConstructor)                  \
     __JS_ENUMERATE(DisplayNames, display_names, DisplayNamesPrototype, DisplayNamesConstructor) \
     __JS_ENUMERATE(ListFormat, list_format, ListFormatPrototype, ListFormatConstructor)         \
     __JS_ENUMERATE(Locale, locale, LocalePrototype, LocaleConstructor)                          \
