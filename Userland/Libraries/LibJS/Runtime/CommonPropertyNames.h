@@ -238,6 +238,7 @@ namespace JS {
     P(hypot)                                 \
     P(id)                                    \
     P(ignoreCase)                            \
+    P(ignorePunctuation)                     \
     P(imul)                                  \
     P(includes)                              \
     P(index)                                 \
@@ -362,6 +363,7 @@ namespace JS {
     P(seal)                                  \
     P(second)                                \
     P(seconds)                               \
+    P(sensitivity)                           \
     P(set)                                   \
     P(setBigInt64)                           \
     P(setBigUint64)                          \
@@ -464,6 +466,7 @@ namespace JS {
     P(until)                                 \
     P(unregister)                            \
     P(unshift)                               \
+    P(usage)                                 \
     P(useGrouping)                           \
     P(value)                                 \
     P(valueOf)                               \

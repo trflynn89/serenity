@@ -377,6 +377,12 @@ String insert_unicode_extension_and_canonicalize(Unicode::LocaleID locale, Unico
 template<typename T>
 static auto& find_key_in_value(T& value, StringView key)
 {
+    if (key == "co"sv)
+        return value.co;
+    if (key == "kf"sv)
+        return value.kf;
+    if (key == "kn"sv)
+        return value.kn;
     if (key == "nu"sv)
         return value.nu;
 

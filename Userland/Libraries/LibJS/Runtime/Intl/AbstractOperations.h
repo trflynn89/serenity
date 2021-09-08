@@ -20,12 +20,18 @@ using Fallback = Variant<Empty, bool, StringView>;
 
 struct LocaleOptions {
     Value locale_matcher;
+    Optional<String> co;
+    Optional<String> kf;
+    Optional<String> kn;
     Optional<String> nu;
 };
 
 struct LocaleResult {
     String locale;
     String data_locale;
+    Optional<String> co;
+    Optional<String> kf;
+    Optional<String> kn;
     Optional<String> nu;
 };
 
