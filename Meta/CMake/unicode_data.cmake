@@ -1,43 +1,46 @@
+set(UCD_VERSION 13.0.0)
+set(CLDR_VERSION 39.0.0)
+
 set(LOCALE_DATA_CACHE_LOCATION "${CMAKE_BINARY_DIR}/CLDR" CACHE PATH "Download location for CLDR files")
 set(UNICODE_CACHE_LOCATION "${CMAKE_BINARY_DIR}/UCD" CACHE PATH "Download location for UCD files")
 
-set(UNICODE_DATA_URL https://www.unicode.org/Public/13.0.0/ucd/UnicodeData.txt)
+set(UNICODE_DATA_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/UnicodeData.txt)
 set(UNICODE_DATA_PATH ${UNICODE_CACHE_LOCATION}/UnicodeData.txt)
 
-set(SPECIAL_CASING_URL https://www.unicode.org/Public/13.0.0/ucd/SpecialCasing.txt)
+set(SPECIAL_CASING_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/SpecialCasing.txt)
 set(SPECIAL_CASING_PATH ${UNICODE_CACHE_LOCATION}/SpecialCasing.txt)
 
-set(DERIVED_GENERAL_CATEGORY_URL https://www.unicode.org/Public/13.0.0/ucd/extracted/DerivedGeneralCategory.txt)
+set(DERIVED_GENERAL_CATEGORY_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/extracted/DerivedGeneralCategory.txt)
 set(DERIVED_GENERAL_CATEGORY_PATH ${UNICODE_CACHE_LOCATION}/DerivedGeneralCategory.txt)
 
-set(PROP_LIST_URL https://www.unicode.org/Public/13.0.0/ucd/PropList.txt)
+set(PROP_LIST_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/PropList.txt)
 set(PROP_LIST_PATH ${UNICODE_CACHE_LOCATION}/PropList.txt)
 
-set(DERIVED_CORE_PROP_URL https://www.unicode.org/Public/13.0.0/ucd/DerivedCoreProperties.txt)
+set(DERIVED_CORE_PROP_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/DerivedCoreProperties.txt)
 set(DERIVED_CORE_PROP_PATH ${UNICODE_CACHE_LOCATION}/DerivedCoreProperties.txt)
 
-set(DERIVED_BINARY_PROP_URL https://www.unicode.org/Public/13.0.0/ucd/extracted/DerivedBinaryProperties.txt)
+set(DERIVED_BINARY_PROP_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/extracted/DerivedBinaryProperties.txt)
 set(DERIVED_BINARY_PROP_PATH ${UNICODE_CACHE_LOCATION}/DerivedBinaryProperties.txt)
 
-set(PROP_ALIAS_URL https://www.unicode.org/Public/13.0.0/ucd/PropertyAliases.txt)
+set(PROP_ALIAS_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/PropertyAliases.txt)
 set(PROP_ALIAS_PATH ${UNICODE_CACHE_LOCATION}/PropertyAliases.txt)
 
-set(PROP_VALUE_ALIAS_URL https://www.unicode.org/Public/13.0.0/ucd/PropertyValueAliases.txt)
+set(PROP_VALUE_ALIAS_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/PropertyValueAliases.txt)
 set(PROP_VALUE_ALIAS_PATH ${UNICODE_CACHE_LOCATION}/PropertyValueAliases.txt)
 
-set(SCRIPTS_URL https://www.unicode.org/Public/13.0.0/ucd/Scripts.txt)
+set(SCRIPTS_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/Scripts.txt)
 set(SCRIPTS_PATH ${UNICODE_CACHE_LOCATION}/Scripts.txt)
 
-set(SCRIPT_EXTENSIONS_URL https://www.unicode.org/Public/13.0.0/ucd/ScriptExtensions.txt)
+set(SCRIPT_EXTENSIONS_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/ScriptExtensions.txt)
 set(SCRIPT_EXTENSIONS_PATH ${UNICODE_CACHE_LOCATION}/ScriptExtensions.txt)
 
-set(EMOJI_DATA_URL https://www.unicode.org/Public/13.0.0/ucd/emoji/emoji-data.txt)
+set(EMOJI_DATA_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/emoji/emoji-data.txt)
 set(EMOJI_DATA_PATH ${UNICODE_CACHE_LOCATION}/emoji-data.txt)
 
-set(NORM_PROPS_URL https://www.unicode.org/Public/13.0.0/ucd/DerivedNormalizationProps.txt)
+set(NORM_PROPS_URL https://www.unicode.org/Public/${UCD_VERSION}/ucd/DerivedNormalizationProps.txt)
 set(NORM_PROPS_PATH ${UNICODE_CACHE_LOCATION}/DerivedNormalizationProps.txt)
 
-set(CLDR_ZIP_URL https://github.com/unicode-org/cldr-json/releases/download/39.0.0/cldr-39.0.0-json-modern.zip)
+set(CLDR_ZIP_URL https://github.com/unicode-org/cldr-json/releases/download/${CLDR_VERSION}/cldr-${CLDR_VERSION}-json-modern.zip)
 set(CLDR_ZIP_PATH ${LOCALE_DATA_CACHE_LOCATION}/cldr.zip)
 
 set(CLDR_CORE_SOURCE cldr-core)
