@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <LibWeb/HTML/HTMLIFrameElement.h>
+#include <LibWeb/HTML/BrowsingContextContainer.h>
 #include <LibWeb/Layout/ReplacedBox.h>
 
 namespace Web::Layout {
@@ -18,8 +18,8 @@ public:
 
     virtual void prepare_for_replaced_layout() override;
 
-    const HTML::HTMLIFrameElement& dom_node() const { return verify_cast<HTML::HTMLIFrameElement>(ReplacedBox::dom_node()); }
-    HTML::HTMLIFrameElement& dom_node() { return verify_cast<HTML::HTMLIFrameElement>(ReplacedBox::dom_node()); }
+    const HTML::BrowsingContextContainer& dom_node() const { return verify_cast<HTML::BrowsingContextContainer>(ReplacedBox::dom_node()); }
+    HTML::BrowsingContextContainer& dom_node() { return verify_cast<HTML::BrowsingContextContainer>(ReplacedBox::dom_node()); }
 
     virtual RefPtr<Painting::Paintable> create_paintable() const override;
 
