@@ -10,6 +10,7 @@
 #include <LibWeb/DOM/Event.h>
 #include <LibWeb/HTML/HTMLMediaElement.h>
 #include <LibWeb/HTML/HTMLObjectElement.h>
+#include <LibWeb/Layout/FrameBox.h>
 #include <LibWeb/Layout/ImageBox.h>
 #include <LibWeb/Loader/ResourceLoader.h>
 #include <LibWeb/MimeSniff/MimeType.h>
@@ -49,8 +50,7 @@ RefPtr<Layout::Node> HTMLObjectElement::create_layout_node(NonnullRefPtr<CSS::St
     case Representation::Children:
         return BrowsingContextContainer::create_layout_node(move(style));
     case Representation::NestedBrowsingContext:
-        // FIXME: Actually paint the nested browsing context's document, similar to how iframes are painted with FrameBox and NestedBrowsingContextPaintable.
-        return nullptr;
+        return adopt_ref(*new Layout::FrameBox(document(), *this, move(style)));
     case Representation::Image:
         if (m_image_loader.has_value() && m_image_loader->has_image())
             return adopt_ref(*new Layout::ImageBox(document(), *this, move(style), *m_image_loader));
