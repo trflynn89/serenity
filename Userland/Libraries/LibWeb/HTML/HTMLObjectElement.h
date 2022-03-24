@@ -8,6 +8,7 @@
 
 #include <LibCore/Forward.h>
 #include <LibGfx/Forward.h>
+#include <LibWeb/DOM/DocumentLoadEventDelayer.h>
 #include <LibWeb/HTML/BrowsingContextContainer.h>
 #include <LibWeb/HTML/FormAssociatedElement.h>
 #include <LibWeb/HTML/HTMLElement.h>
@@ -63,6 +64,8 @@ private:
     virtual void resource_did_fail() override;
 
     Representation m_representation { Representation::Unknown };
+
+    Optional<DOM::DocumentLoadEventDelayer> m_document_load_event_delayer;
     Optional<ImageLoader> m_image_loader;
 };
 

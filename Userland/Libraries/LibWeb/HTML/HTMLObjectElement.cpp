@@ -76,6 +76,9 @@ bool HTMLObjectElement::has_ancestor_media_element_or_object_element_not_showing
 // https://html.spec.whatwg.org/multipage/iframe-embed-object.html#the-object-element:queue-an-element-task
 void HTMLObjectElement::queue_element_task_to_run_object_representation_steps()
 {
+    // This task being queued or actively running must delay the load event of the element's node document.
+    m_document_load_event_delayer.emplace(document());
+
     queue_an_element_task(HTML::Task::Source::DOMManipulation, [&]() {
         // 1. FIXME: If the user has indicated a preference that this object element's fallback content be shown instead of the element's usual behavior, then jump to the step below labeled fallback.
 
@@ -309,6 +312,8 @@ void HTMLObjectElement::update_layout_and_child_objects(Representation represent
     m_representation = representation;
     set_needs_style_update(true);
     document().set_needs_layout();
+
+    m_document_load_event_delayer.clear();
 }
 
 }
