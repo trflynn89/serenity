@@ -31,6 +31,11 @@ void HTMLObjectElement::parse_attribute(const FlyString& name, const String& val
         queue_element_task_to_run_object_representation_steps();
 }
 
+void HTMLObjectElement::form_associated_element_was_inserted()
+{
+    queue_element_task_to_run_object_representation_steps();
+}
+
 // https://html.spec.whatwg.org/multipage/iframe-embed-object.html#attr-object-data
 String HTMLObjectElement::data() const
 {

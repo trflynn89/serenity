@@ -46,6 +46,8 @@ public:
     // https://html.spec.whatwg.org/multipage/forms.html#category-listed
     virtual bool is_listed() const override { return true; }
 
+    virtual void form_associated_element_was_inserted() override;
+
 private:
     virtual RefPtr<Layout::Node> create_layout_node(NonnullRefPtr<CSS::StyleProperties>) override;
 
