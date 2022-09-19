@@ -1,0 +1,79 @@
+{
+    "folders": [
+        {
+            "path": "serenity",
+            // "index_exclude_patterns": ["*"],
+            "folder_exclude_patterns": [
+                "Build",
+                "Toolchain",
+            ],
+        },
+        {
+            "name": "generated",
+            "path": "serenity/Build",
+            // "index_exclude_patterns": ["*"],
+            "folder_include_patterns": [
+                "i686",
+                "i686/Userland",
+                "lagom",
+                "lagom/AK",
+                "lagom/LibLocale",
+                "lagom/LibTimeZone",
+                "lagom/LibUnicode",
+            ],
+            "folder_exclude_patterns": [
+                "i686/Userland/Libraries/LibLocale",
+                "i686/Userland/Libraries/LibTimeZone",
+                "i686/Userland/Libraries/LibUnicode",
+            ],
+            "file_include_patterns": [
+                "*.h",
+                "*.cpp",
+            ]
+        },
+        {
+            "name": "downloaded",
+            "path": "serenity/Build/i686",
+            // "index_exclude_patterns": ["*"],
+            "folder_include_patterns": [
+                "CLDR/",
+                "TZDB/",
+                "UCD/",
+            ],
+        },
+        {
+            "name": "test262",
+            "path": "libjs-test262",
+            // "index_exclude_patterns": ["*"],
+            "folder_exclude_patterns": [
+                "Build",
+            ],
+        },
+        {
+            "path": "ladybird",
+            // "index_exclude_patterns": ["*"],
+            "folder_exclude_patterns": [
+                "Build",
+            ],
+        },
+    ],
+    "settings": {
+        "format": {
+            "clang-format": {
+                "on_save": true,
+            },
+        },
+        // "LSP": {
+        //     "clangd": {
+        //         "command": [
+        //             "clangd",
+        //             "--compile-commands-dir", "Build/i686",
+        //             "--header-insertion", "never",
+        //             "--all-scopes-completion",
+        //             "--background-index",
+        //         ],
+        //         "enabled": true,
+        //     },
+        // },
+    },
+}
