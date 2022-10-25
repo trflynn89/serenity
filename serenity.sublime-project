@@ -13,18 +13,18 @@
             "path": "serenity/Build",
             // "index_exclude_patterns": ["*"],
             "folder_include_patterns": [
-                "i686",
-                "i686/Userland",
                 "lagom",
                 "lagom/AK",
-                "lagom/LibLocale",
-                "lagom/LibTimeZone",
-                "lagom/LibUnicode",
+                "lagom/Userland",
+                "x86_64",
+                "x86_64/Userland",
             ],
             "folder_exclude_patterns": [
-                "i686/Userland/Libraries/LibLocale",
-                "i686/Userland/Libraries/LibTimeZone",
-                "i686/Userland/Libraries/LibUnicode",
+                "lagom/Userland/Services",
+                "lagom/Userland/Shell",
+                "x86_64/Userland/Libraries/LibLocale",
+                "x86_64/Userland/Libraries/LibTimeZone",
+                "x86_64/Userland/Libraries/LibUnicode",
             ],
             "file_include_patterns": [
                 "*.h",
@@ -33,7 +33,7 @@
         },
         {
             "name": "downloaded",
-            "path": "serenity/Build/i686",
+            "path": "serenity/Build/x86_64",
             // "index_exclude_patterns": ["*"],
             "folder_include_patterns": [
                 "CLDR/",
@@ -67,7 +67,7 @@
         //     "clangd": {
         //         "command": [
         //             "clangd",
-        //             "--compile-commands-dir", "Build/i686",
+        //             "--compile-commands-dir", "Build/x86_64",
         //             "--header-insertion", "never",
         //             "--all-scopes-completion",
         //             "--background-index",
