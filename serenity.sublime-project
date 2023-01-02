@@ -2,30 +2,18 @@
     "folders": [
         {
             "path": "serenity",
-            // "index_exclude_patterns": ["*"],
+            "index_exclude_patterns": ["*"],
             "folder_exclude_patterns": [
+                ".devcontainer",
                 "Build",
+                "Ports",
                 "Toolchain",
             ],
         },
         {
             "name": "generated",
-            "path": "serenity/Build",
-            // "index_exclude_patterns": ["*"],
-            "folder_include_patterns": [
-                "lagom",
-                "lagom/AK",
-                "lagom/Userland",
-                "x86_64",
-                "x86_64/Userland",
-            ],
-            "folder_exclude_patterns": [
-                "lagom/Userland/Services",
-                "lagom/Userland/Shell",
-                "x86_64/Userland/Libraries/LibLocale",
-                "x86_64/Userland/Libraries/LibTimeZone",
-                "x86_64/Userland/Libraries/LibUnicode",
-            ],
+            "path": "serenity/Build/lagom/Userland/Libraries",
+            "index_exclude_patterns": ["*"],
             "file_include_patterns": [
                 "*.h",
                 "*.cpp",
@@ -33,25 +21,19 @@
         },
         {
             "name": "downloaded",
-            "path": "serenity/Build/x86_64",
-            // "index_exclude_patterns": ["*"],
-            "folder_include_patterns": [
-                "CLDR/",
-                "TZDB/",
-                "UCD/",
-            ],
+            "path": "serenity/Build/caches",
+            "index_exclude_patterns": ["*"],
         },
         {
-            "name": "test262",
             "path": "libjs-test262",
-            // "index_exclude_patterns": ["*"],
+            "index_exclude_patterns": ["*"],
             "folder_exclude_patterns": [
                 "Build",
             ],
         },
         {
-            "path": "ladybird",
-            // "index_exclude_patterns": ["*"],
+            "path": "libjs-website",
+            "index_exclude_patterns": ["*"],
             "folder_exclude_patterns": [
                 "Build",
             ],
@@ -63,17 +45,10 @@
                 "on_save": true,
             },
         },
-        // "LSP": {
-        //     "clangd": {
-        //         "command": [
-        //             "clangd",
-        //             "--compile-commands-dir", "Build/x86_64",
-        //             "--header-insertion", "never",
-        //             "--all-scopes-completion",
-        //             "--background-index",
-        //         ],
-        //         "enabled": true,
-        //     },
-        // },
+        "LSP": {
+            "clangd": {
+                "enabled": true,
+            },
+        },
     },
 }
