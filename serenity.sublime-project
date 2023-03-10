@@ -47,7 +47,9 @@
         },
         "LSP": {
             "clangd": {
-                "enabled": true,
+                "initializationOptions": {
+                    "clangd.query-driver": "$project_path/serenity/Toolchain/Local/**/*",
+                },
             },
         },
     },
