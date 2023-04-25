@@ -770,6 +770,28 @@ public:
 class ErrorStatement final : public Statement {
 };
 
+class BeginTransaction : public Statement {
+public:
+    enum class Type {
+        Deferred,
+        Immediate,
+        Exclusive,
+    };
+
+    explicit BeginTransaction(Type type)
+        : m_type(type)
+    {
+    }
+
+    Type type() const { return m_type; }
+
+private:
+    Type m_type { Type::Deferred };
+};
+
+class CommitTransaction : public Statement {
+};
+
 class CreateSchema : public Statement {
 public:
     CreateSchema(DeprecatedString schema_name, bool is_error_if_schema_exists)

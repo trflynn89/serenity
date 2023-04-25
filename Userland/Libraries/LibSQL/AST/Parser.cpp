@@ -37,6 +37,11 @@ NonnullRefPtr<Statement> Parser::next_statement()
 NonnullRefPtr<Statement> Parser::parse_statement()
 {
     switch (m_parser_state.m_token.type()) {
+    case TokenType::Begin:
+        return parse_begin_transaction_statement();
+    case TokenType::Commit:
+    case TokenType::End:
+        return parse_commit_transaction_statement();
     case TokenType::Create:
         consume();
         if (match(TokenType::Schema))
@@ -58,7 +63,7 @@ NonnullRefPtr<Statement> Parser::parse_statement()
     case TokenType::Select:
         return parse_select_statement({});
     default:
-        expected("CREATE, ALTER, DROP, DESCRIBE, INSERT, UPDATE, DELETE, or SELECT"sv);
+        expected("CREATE, ALTER, DROP, DESCRIBE, INSERT, UPDATE, DELETE, SELECT, BEGIN, COMMIT, or END"sv);
         return create_ast_node<ErrorStatement>();
     }
 }
@@ -78,6 +83,34 @@ NonnullRefPtr<Statement> Parser::parse_statement_with_expression_list(RefPtr<Com
         expected("INSERT, UPDATE, DELETE, or SELECT"sv);
         return create_ast_node<ErrorStatement>();
     }
+}
+
+// https://www.sqlite.org/syntax/begin-stmt.html
+NonnullRefPtr<BeginTransaction> Parser::parse_begin_transaction_statement()
+{
+    consume(TokenType::Begin);
+
+    auto type = BeginTransaction::Type::Deferred;
+
+    if (consume_if(TokenType::Immediate))
+        type = BeginTransaction::Type::Immediate;
+    else if (consume_if(TokenType::Exclusive))
+        type = BeginTransaction::Type::Exclusive;
+    else
+        consume_if(TokenType::Deferred);
+
+    consume_if(TokenType::Transaction);
+    return create_ast_node<BeginTransaction>(type);
+}
+
+// https://www.sqlite.org/syntax/commit-stmt.html
+NonnullRefPtr<CommitTransaction> Parser::parse_commit_transaction_statement()
+{
+    if (!consume_if(TokenType::Commit) && !consume_if(TokenType::End))
+        expected("COMMIT or END"sv);
+
+    consume_if(TokenType::Transaction);
+    return create_ast_node<CommitTransaction>();
 }
 
 NonnullRefPtr<CreateSchema> Parser::parse_create_schema_statement()

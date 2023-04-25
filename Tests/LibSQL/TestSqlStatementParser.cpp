@@ -35,6 +35,70 @@ ParseResult parse(StringView sql)
 
 }
 
+TEST_CASE(begin_transaction)
+{
+    EXPECT(parse("BEGIN"sv).is_error());
+    EXPECT(parse("BEGIN TRANSACTION"sv).is_error());
+    EXPECT(parse("BEGIN DEFERRED"sv).is_error());
+    EXPECT(parse("BEGIN IMMEDIATE"sv).is_error());
+    EXPECT(parse("BEGIN EXCLUSIVE"sv).is_error());
+    EXPECT(parse("BEGIN IDONTEXIST"sv).is_error());
+    EXPECT(parse("BEGIN IDONTEXIST;"sv).is_error());
+    EXPECT(parse("BEGIN DEFERRED TRANSACTION"sv).is_error());
+    EXPECT(parse("BEGIN IMMEDIATE TRANSACTION"sv).is_error());
+    EXPECT(parse("BEGIN EXCLUSIVE TRANSACTION"sv).is_error());
+    EXPECT(parse("BEGIN IDONTEXIST TRANSACTION"sv).is_error());
+
+    auto validate = [](auto sql, SQL::AST::BeginTransaction::Type expected_type) {
+        auto result = parse(sql);
+        if (result.is_error())
+            outln("{}: {}", sql, result.error());
+        EXPECT(!result.is_error());
+
+        auto statement = result.release_value();
+        EXPECT(is<SQL::AST::BeginTransaction>(*statement));
+
+        const auto& transaction = static_cast<const SQL::AST::BeginTransaction&>(*statement);
+        EXPECT_EQ(transaction.type(), expected_type);
+    };
+
+    validate("BEGIN;"sv, SQL::AST::BeginTransaction::Type::Deferred);
+    validate("BEGIN TRANSACTION;"sv, SQL::AST::BeginTransaction::Type::Deferred);
+    validate("BEGIN DEFERRED;"sv, SQL::AST::BeginTransaction::Type::Deferred);
+    validate("BEGIN IMMEDIATE;"sv, SQL::AST::BeginTransaction::Type::Immediate);
+    validate("BEGIN EXCLUSIVE;"sv, SQL::AST::BeginTransaction::Type::Exclusive);
+    validate("BEGIN DEFERRED TRANSACTION;"sv, SQL::AST::BeginTransaction::Type::Deferred);
+    validate("BEGIN IMMEDIATE TRANSACTION;"sv, SQL::AST::BeginTransaction::Type::Immediate);
+    validate("BEGIN EXCLUSIVE TRANSACTION;"sv, SQL::AST::BeginTransaction::Type::Exclusive);
+}
+
+TEST_CASE(commit_transaction)
+{
+    EXPECT(parse("COMMIT"sv).is_error());
+    EXPECT(parse("COMMIT TRANSACTION"sv).is_error());
+    EXPECT(parse("COMMIT IDONTEXIST"sv).is_error());
+    EXPECT(parse("COMMIT IDONTEXIST;"sv).is_error());
+    EXPECT(parse("END"sv).is_error());
+    EXPECT(parse("END TRANSACTION"sv).is_error());
+    EXPECT(parse("END IDONTEXIST"sv).is_error());
+    EXPECT(parse("END IDONTEXIST;"sv).is_error());
+
+    auto validate = [](auto sql) {
+        auto result = parse(sql);
+        if (result.is_error())
+            outln("{}: {}", sql, result.error());
+        EXPECT(!result.is_error());
+
+        auto statement = result.release_value();
+        EXPECT(is<SQL::AST::CommitTransaction>(*statement));
+    };
+
+    validate("COMMIT;"sv);
+    validate("COMMIT TRANSACTION;"sv);
+    validate("END;"sv);
+    validate("END TRANSACTION;"sv);
+}
+
 TEST_CASE(create_table)
 {
     EXPECT(parse("CREATE TABLE"sv).is_error());

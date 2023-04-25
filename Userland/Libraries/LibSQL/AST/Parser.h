@@ -58,6 +58,8 @@ private:
 
     NonnullRefPtr<Statement> parse_statement();
     NonnullRefPtr<Statement> parse_statement_with_expression_list(RefPtr<CommonTableExpressionList>);
+    NonnullRefPtr<BeginTransaction> parse_begin_transaction_statement();
+    NonnullRefPtr<CommitTransaction> parse_commit_transaction_statement();
     NonnullRefPtr<CreateSchema> parse_create_schema_statement();
     NonnullRefPtr<CreateTable> parse_create_table_statement();
     NonnullRefPtr<AlterTable> parse_alter_table_statement();
