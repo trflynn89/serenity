@@ -38,8 +38,6 @@ private:
     void report_error(SQL::Result, SQL::ExecutionID execution_id);
 
     SQL::StatementID m_statement_id { 0 };
-
-    HashTable<SQL::ExecutionID> m_ongoing_executions;
     SQL::ExecutionID m_next_execution_id { 0 };
 
     NonnullRefPtr<SQL::AST::Statement> m_statement;

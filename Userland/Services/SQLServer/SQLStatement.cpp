@@ -69,11 +69,9 @@ Optional<SQL::ExecutionID> SQLStatement::execute(Vector<SQL::Value> placeholder_
     }
 
     auto execution_id = m_next_execution_id++;
-    m_ongoing_executions.set(execution_id);
 
     deferred_invoke([this, placeholder_values = move(placeholder_values), execution_id] {
         auto execution_result = m_statement->execute(connection()->database(), placeholder_values);
-        m_ongoing_executions.remove(execution_id);
 
         if (execution_result.is_error()) {
             report_error(execution_result.release_error(), execution_id);
