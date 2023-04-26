@@ -11,9 +11,9 @@
 
 namespace SQL::AST {
 
-ResultOr<ResultSet> Statement::execute(AK::NonnullRefPtr<Database> database, ReadonlySpan<Value> placeholder_values) const
+ResultOr<ResultSet> Statement::execute(AK::NonnullRefPtr<Database> database, ConnectionID connection_id, ReadonlySpan<Value> placeholder_values) const
 {
-    ExecutionContext context { move(database), this, placeholder_values, nullptr };
+    ExecutionContext context { move(database), connection_id, this, placeholder_values, nullptr };
     auto result = TRY(execute(context));
 
     // FIXME: When transactional sessions are supported, don't auto-commit modifications.

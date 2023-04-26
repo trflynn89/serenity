@@ -299,6 +299,7 @@ private:
 
 struct ExecutionContext {
     NonnullRefPtr<Database> database;
+    ConnectionID connection_id { 0 };
     Statement const* statement { nullptr };
     ReadonlySpan<Value> placeholder_values {};
     Tuple* current_row { nullptr };
@@ -759,7 +760,7 @@ private:
 
 class Statement : public ASTNode {
 public:
-    ResultOr<ResultSet> execute(AK::NonnullRefPtr<Database> database, ReadonlySpan<Value> placeholder_values = {}) const;
+    ResultOr<ResultSet> execute(AK::NonnullRefPtr<Database> database, ConnectionID connection_id, ReadonlySpan<Value> placeholder_values) const;
 
     virtual ResultOr<ResultSet> execute(ExecutionContext&) const
     {
@@ -785,11 +786,15 @@ public:
 
     Type type() const { return m_type; }
 
+    ResultOr<ResultSet> execute(ExecutionContext&) const override;
+
 private:
     Type m_type { Type::Deferred };
 };
 
 class CommitTransaction : public Statement {
+public:
+    ResultOr<ResultSet> execute(ExecutionContext&) const override;
 };
 
 class CreateSchema : public Statement {

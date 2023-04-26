@@ -28,7 +28,7 @@ SQL::ResultOr<SQL::ResultSet> try_execute(NonnullRefPtr<SQL::Database> database,
     EXPECT(!parser.has_errors());
     if (parser.has_errors())
         outln("{}", parser.errors()[0].to_deprecated_string());
-    return statement->execute(move(database), placeholder_values);
+    return statement->execute(move(database), 0, placeholder_values);
 }
 
 SQL::ResultSet execute(NonnullRefPtr<SQL::Database> database, DeprecatedString const& sql, Vector<SQL::Value> placeholder_values = {})

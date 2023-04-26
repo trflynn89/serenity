@@ -7,6 +7,7 @@
 
 #include <AK/DeprecatedString.h>
 #include <AK/NonnullRefPtr.h>
+#include <AK/ScopeGuard.h>
 #include <LibSQL/BTree.h>
 #include <LibSQL/Database.h>
 #include <LibSQL/Heap.h>
@@ -251,6 +252,44 @@ ErrorOr<void> Database::update(Row& tuple)
 
     // TODO update indexes defined on table.
     return {};
+}
+
+Optional<ConnectionID> Database::ongoing_transaction() const
+{
+    if (m_transaction.has_value())
+        return m_transaction->connection_id;
+    return {};
+}
+
+ResultOr<void> Database::begin_transaction(ConnectionID connection_id)
+{
+    if (m_transaction.has_value())
+        return Result { SQLCommand::BeginTransaction, SQLErrorCode::NestedTransaction };
+
+    m_transaction.emplace(connection_id);
+    return {};
+}
+
+ResultOr<void> Database::commit_transaction()
+{
+    if (!m_transaction.has_value())
+        return Result { SQLCommand::CommitTransaction, SQLErrorCode::NoActiveTransaction };
+
+    ScopeGuard guard { [&] { m_transaction.clear(); } };
+    TRY(commit());
+
+    return {};
+}
+
+void Database::rollback_transaction()
+{
+    m_transaction.clear();
+}
+
+void Database::queue_statement(ConnectionID connection_id, StatementID statement_id, ExecutionID execution_id, Vector<Value> placeholder_values)
+{
+    VERIFY(m_transaction.has_value());
+    m_transaction->pending_statements.empend(connection_id, statement_id, execution_id, move(placeholder_values));
 }
 
 }

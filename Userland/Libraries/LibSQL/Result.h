@@ -16,6 +16,8 @@ namespace SQL {
 
 #define ENUMERATE_SQL_COMMANDS(S) \
     S(Unknown)                    \
+    S(BeginTransaction)           \
+    S(CommitTransaction)          \
     S(Create)                     \
     S(Delete)                     \
     S(Describe)                   \
@@ -57,6 +59,8 @@ constexpr char const* command_tag(SQLCommand command)
     S(InvalidOperator, "Invalid operator '{}'")                                                   \
     S(InvalidType, "Invalid type '{}'")                                                           \
     S(InvalidValueType, "Invalid type for attribute '{}'")                                        \
+    S(NestedTransaction, "Cannot start a transaction within another transaction")                 \
+    S(NoActiveTransaction, "Cannot commit without an active transaction")                         \
     S(NoError, "No error")                                                                        \
     S(NotYetImplemented, "{}")                                                                    \
     S(NumericOperatorTypeMismatch, "Cannot apply '{}' operator to non-numeric operands")          \

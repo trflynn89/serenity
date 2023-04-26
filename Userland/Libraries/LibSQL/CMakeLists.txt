@@ -10,6 +10,7 @@ set(SOURCES
     AST/Select.cpp
     AST/Statement.cpp
     AST/SyntaxHighlighter.cpp
+    AST/Transaction.cpp
     AST/Token.cpp
     AST/Update.cpp
     BTree.cpp

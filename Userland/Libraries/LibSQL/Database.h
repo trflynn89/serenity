@@ -15,6 +15,7 @@
 #include <LibSQL/Meta.h>
 #include <LibSQL/Result.h>
 #include <LibSQL/Serializer.h>
+#include <LibSQL/Type.h>
 
 namespace SQL {
 
@@ -47,7 +48,25 @@ public:
     ErrorOr<void> remove(Row&);
     ErrorOr<void> update(Row&);
 
+    Optional<ConnectionID> ongoing_transaction() const;
+    ResultOr<void> begin_transaction(ConnectionID);
+    ResultOr<void> commit_transaction();
+    void rollback_transaction();
+    void queue_statement(ConnectionID connection_id, StatementID statement_id, ExecutionID execution_id, Vector<Value> placeholder_values);
+
 private:
+    struct PendingStatement {
+        ConnectionID connection_id { 0 };
+        StatementID statement_id { 0 };
+        ExecutionID execution_id { 0 };
+        Vector<Value> placeholder_values {};
+    };
+
+    struct Transaction {
+        ConnectionID connection_id { 0 };
+        Vector<PendingStatement> pending_statements {};
+    };
+
     explicit Database(DeprecatedString);
 
     bool m_open { false };
@@ -59,6 +78,8 @@ private:
 
     HashMap<u32, NonnullRefPtr<SchemaDef>> m_schema_cache;
     HashMap<u32, NonnullRefPtr<TableDef>> m_table_cache;
+
+    Optional<Transaction> m_transaction;
 };
 
 }

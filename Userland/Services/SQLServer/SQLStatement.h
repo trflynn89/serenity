@@ -37,6 +37,7 @@ private:
     void next(SQL::ExecutionID execution_id, SQL::ResultSet result, size_t result_size);
     void report_error(SQL::Result, SQL::ExecutionID execution_id);
 
+    SQL::ConnectionID m_connection_id { 0 };
     SQL::StatementID m_statement_id { 0 };
     SQL::ExecutionID m_next_execution_id { 0 };
 

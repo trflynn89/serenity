@@ -70,8 +70,16 @@ Optional<SQL::ExecutionID> SQLStatement::execute(Vector<SQL::Value> placeholder_
 
     auto execution_id = m_next_execution_id++;
 
-    deferred_invoke([this, placeholder_values = move(placeholder_values), execution_id] {
-        auto execution_result = m_statement->execute(connection()->database(), placeholder_values);
+    deferred_invoke([this, placeholder_values = move(placeholder_values), execution_id]() mutable {
+        auto database = connection()->database();
+        auto connection_id = connection()->connection_id();
+
+        if (auto ongoing_transaction = database->ongoing_transaction(); ongoing_transaction.has_value() && ongoing_transaction != connection_id) {
+            database->queue_statement(connection_id, statement_id(), execution_id, move(placeholder_values));
+            return;
+        }
+
+        auto execution_result = m_statement->execute(database, connection_id, placeholder_values);
 
         if (execution_result.is_error()) {
             report_error(execution_result.release_error(), execution_id);
