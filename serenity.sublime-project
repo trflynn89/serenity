@@ -2,7 +2,16 @@
     "folders": [
         {
             "path": "serenity",
-            "index_exclude_patterns": ["*"],
+            "index_exclude_patterns": [
+                "*.c",
+                "*.cc",
+                "*.cpp",
+                "*.m",
+                "*.mm",
+                "*.h",
+                "*.hh",
+                "*.hpp",
+            ],
             "folder_exclude_patterns": [
                 ".devcontainer",
                 "Build",
@@ -17,7 +26,7 @@
             "file_include_patterns": [
                 "*.h",
                 "*.cpp",
-            ]
+            ],
         },
         {
             "name": "downloaded",
@@ -26,14 +35,6 @@
         },
         {
             "path": "libjs-test262",
-            "index_exclude_patterns": ["*"],
-            "folder_exclude_patterns": [
-                "Build",
-            ],
-        },
-        {
-            "path": "libjs-website",
-            "index_exclude_patterns": ["*"],
             "folder_exclude_patterns": [
                 "Build",
             ],
