@@ -217,7 +217,7 @@ ThrowCompletionOr<NonnullGCPtr<DateTimeFormat>> create_date_time_format(VM& vm, 
 
     // 30. If timeZone is undefined, then
     if (time_zone_value.is_undefined()) {
-        // a. Set timeZone to DefaultTimeZone().
+        // a. Set timeZone to SystemTimeZoneIdentifier().
         time_zone = MUST(String::from_utf8(system_time_zone_identifier()));
     }
     // 31. Else,
