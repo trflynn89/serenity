@@ -516,7 +516,7 @@ ThrowCompletionOr<Vector<PatternPartition>> format_date_time_pattern(VM& vm, Dat
 
     // 13. Let tm be ToLocalTime(ℤ(ℝ(x) × 10^6), dateTimeFormat.[[Calendar]], dateTimeFormat.[[TimeZone]]).
     auto time_bigint = Crypto::SignedBigInteger { time }.multiplied_by(s_one_million_bigint);
-    auto local_time = TRY(to_local_time(vm, time_bigint, date_time_format.calendar(), date_time_format.time_zone()));
+    auto local_time = to_local_time(time_bigint, date_time_format.calendar(), date_time_format.time_zone());
 
     // 14. Let result be a new empty List.
     Vector<PatternPartition> result;
@@ -862,11 +862,11 @@ ThrowCompletionOr<Vector<PatternPartitionWithSource>> partition_date_time_range_
 
     // 5. Let tm1 be ToLocalTime(ℤ(ℝ(x) × 10^6), dateTimeFormat.[[Calendar]], dateTimeFormat.[[TimeZone]]).
     auto start_bigint = Crypto::SignedBigInteger { start }.multiplied_by(s_one_million_bigint);
-    auto start_local_time = TRY(to_local_time(vm, start_bigint, date_time_format.calendar(), date_time_format.time_zone()));
+    auto start_local_time = to_local_time(start_bigint, date_time_format.calendar(), date_time_format.time_zone());
 
     // 6. Let tm2 be ToLocalTime(ℤ(ℝ(y) × 10^6), dateTimeFormat.[[Calendar]], dateTimeFormat.[[TimeZone]]).
     auto end_bigint = Crypto::SignedBigInteger { end }.multiplied_by(s_one_million_bigint);
-    auto end_local_time = TRY(to_local_time(vm, end_bigint, date_time_format.calendar(), date_time_format.time_zone()));
+    auto end_local_time = to_local_time(end_bigint, date_time_format.calendar(), date_time_format.time_zone());
 
     // 7. Let rangePatterns be dateTimeFormat.[[RangePatterns]].
     auto range_patterns = date_time_format.range_patterns();
@@ -1128,7 +1128,7 @@ ThrowCompletionOr<NonnullGCPtr<Array>> format_date_time_range_to_parts(VM& vm, D
 }
 
 // 11.5.12 ToLocalTime ( epochNs, calendar, timeZoneIdentifier ), https://tc39.es/ecma402/#sec-tolocaltime
-ThrowCompletionOr<LocalTime> to_local_time(VM& vm, Crypto::SignedBigInteger const& epoch_ns, StringView calendar, StringView time_zone_identifier)
+LocalTime to_local_time(Crypto::SignedBigInteger const& epoch_ns, StringView calendar, StringView time_zone_identifier)
 {
     double offset_ns { 0 };
 
@@ -1152,6 +1152,12 @@ ThrowCompletionOr<LocalTime> to_local_time(VM& vm, Crypto::SignedBigInteger cons
 
     // 3. Let tz be ℝ(epochNs) + offsetNs.
     auto zoned_time_ns = epoch_ns.plus(Crypto::SignedBigInteger { offset_ns });
+
+    // NOTE: Treat the ISO 8601 calendar the same as the Gregorian calendar. There are some differences between the two
+    //       (e.g. ISO 8601 has negative years rather than eras). But as far as we're concerned here, creating a Local
+    //       Time record can have the same implementation. Other engines also treat them the same here.
+    if (calendar == "iso8601"sv)
+        calendar = "gregory"sv;
 
     // 4. If calendar is "gregory", then
     if (calendar == "gregory"sv) {
@@ -1190,7 +1196,7 @@ ThrowCompletionOr<LocalTime> to_local_time(VM& vm, Crypto::SignedBigInteger cons
     // 5. Else,
     //     a. Return a record with the fields of Column 1 of Table 8 calculated from tz for the given calendar. The calculations should use best available information about the specified calendar.
     // FIXME: Implement this when non-Gregorian calendars are supported by LibUnicode.
-    return vm.throw_completion<InternalError>(ErrorType::NotImplemented, "Non-Gregorian calendars"sv);
+    TODO();
 }
 
 }
