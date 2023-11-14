@@ -797,7 +797,7 @@ ThrowCompletionOr<NonnullGCPtr<Array>> format_date_time_to_parts(VM& vm, DateTim
         // c. Perform ! CreateDataPropertyOrThrow(O, "value", part.[[Value]]).
         MUST(object->create_data_property_or_throw(vm.names.value, PrimitiveString::create(vm, move(part.value))));
 
-        // d. Perform ! CreateDataProperty(result, ! ToString(n), O).
+        // d. Perform ! CreateDataPropertyOrThrow(result, ! ToString(n), O).
         MUST(result->create_data_property_or_throw(n, object));
 
         // e. Increment n by 1.
@@ -1114,7 +1114,7 @@ ThrowCompletionOr<NonnullGCPtr<Array>> format_date_time_range_to_parts(VM& vm, D
         // d. Perform ! CreateDataPropertyOrThrow(O, "source", part.[[Source]]).
         MUST(object->create_data_property_or_throw(vm.names.source, PrimitiveString::create(vm, part.source)));
 
-        // e. Perform ! CreateDataProperty(result, ! ToString(n), O).
+        // e. Perform ! CreateDataPropertyOrThrow(result, ! ToString(n), O).
         MUST(result->create_data_property_or_throw(n, object));
 
         // f. Increment n by 1.
