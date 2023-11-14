@@ -467,9 +467,9 @@ ThrowCompletionOr<Vector<PatternPartition>> format_date_time_pattern(VM& vm, Dat
     auto const& locale = date_time_format.locale();
     auto const& data_locale = date_time_format.data_locale();
 
-    auto construct_number_format = [&](auto& options) -> ThrowCompletionOr<NumberFormat*> {
-        auto number_format = TRY(construct(vm, realm.intrinsics().intl_number_format_constructor(), PrimitiveString::create(vm, locale), options));
-        return static_cast<NumberFormat*>(number_format.ptr());
+    auto construct_number_format = [&](auto& options) {
+        auto number_format = MUST(construct(vm, realm.intrinsics().intl_number_format_constructor(), PrimitiveString::create(vm, locale), options));
+        return NonnullGCPtr { static_cast<NumberFormat&>(*number_format) };
     };
 
     // 4. Let nfOptions be OrdinaryObjectCreate(null).
@@ -478,8 +478,8 @@ ThrowCompletionOr<Vector<PatternPartition>> format_date_time_pattern(VM& vm, Dat
     // 5. Perform ! CreateDataPropertyOrThrow(nfOptions, "useGrouping", false).
     MUST(number_format_options->create_data_property_or_throw(vm.names.useGrouping, Value(false)));
 
-    // 6. Let nf be ? Construct(%NumberFormat%, « locale, nfOptions »).
-    auto* number_format = TRY(construct_number_format(number_format_options));
+    // 6. Let nf be ! Construct(%NumberFormat%, « locale, nfOptions »).
+    auto number_format = construct_number_format(number_format_options);
 
     // 7. Let nf2Options be OrdinaryObjectCreate(null).
     auto number_format_options2 = Object::create(realm, nullptr);
@@ -490,12 +490,12 @@ ThrowCompletionOr<Vector<PatternPartition>> format_date_time_pattern(VM& vm, Dat
     // 9. Perform ! CreateDataPropertyOrThrow(nf2Options, "useGrouping", false).
     MUST(number_format_options2->create_data_property_or_throw(vm.names.useGrouping, Value(false)));
 
-    // 10. Let nf2 be ? Construct(%NumberFormat%, « locale, nf2Options »).
-    auto* number_format2 = TRY(construct_number_format(number_format_options2));
+    // 10. Let nf2 be ! Construct(%NumberFormat%, « locale, nf2Options »).
+    auto number_format2 = construct_number_format(number_format_options2);
 
     // 11. Let fractionalSecondDigits be dateTimeFormat.[[FractionalSecondDigits]].
     Optional<u8> fractional_second_digits;
-    NumberFormat* number_format3 = nullptr;
+    GCPtr<NumberFormat> number_format3;
 
     // 12. If fractionalSecondDigits is not undefined, then
     if (date_time_format.has_fractional_second_digits()) {
@@ -510,8 +510,8 @@ ThrowCompletionOr<Vector<PatternPartition>> format_date_time_pattern(VM& vm, Dat
         // c. Perform ! CreateDataPropertyOrThrow(nf3Options, "useGrouping", false).
         MUST(number_format_options3->create_data_property_or_throw(vm.names.useGrouping, Value(false)));
 
-        // d. Let nf3 be ? Construct(%NumberFormat%, « locale, nf3Options »).
-        number_format3 = TRY(construct_number_format(number_format_options3));
+        // d. Let nf3 be ! Construct(%NumberFormat%, « locale, nf3Options »).
+        number_format3 = construct_number_format(number_format_options3);
     }
 
     // 13. Let tm be ToLocalTime(ℤ(ℝ(x) × 10^6), dateTimeFormat.[[Calendar]], dateTimeFormat.[[TimeZone]]).
@@ -835,12 +835,11 @@ void for_each_range_pattern_field(LocalTime const& time1, LocalTime const& time2
 }
 
 template<typename Callback>
-static ThrowCompletionOr<void> for_each_range_pattern_with_source(::Locale::CalendarRangePattern& pattern, Callback&& callback)
+static void for_each_range_pattern_with_source(::Locale::CalendarRangePattern& pattern, Callback&& callback)
 {
-    TRY(callback(pattern.start_range, "startRange"sv));
-    TRY(callback(pattern.separator, "shared"sv));
-    TRY(callback(pattern.end_range, "endRange"sv));
-    return {};
+    callback(pattern.start_range, "startRange"sv);
+    callback(pattern.separator, "shared"sv);
+    callback(pattern.end_range, "endRange"sv);
 }
 
 // 11.5.9 PartitionDateTimeRangePattern ( dateTimeFormat, x, y ), https://tc39.es/ecma402/#sec-partitiondatetimerangepattern
@@ -993,8 +992,8 @@ ThrowCompletionOr<Vector<PatternPartitionWithSource>> partition_date_time_range_
         // b. Let patternParts be PartitionPattern(pattern).
         auto pattern_parts = partition_pattern(pattern);
 
-        // c. Let result be ? FormatDateTimePattern(dateTimeFormat, patternParts, x, undefined).
-        auto raw_result = TRY(format_date_time_pattern(vm, date_time_format, move(pattern_parts), start, nullptr));
+        // c. Let result be ! FormatDateTimePattern(dateTimeFormat, patternParts, x, undefined).
+        auto raw_result = MUST(format_date_time_pattern(vm, date_time_format, move(pattern_parts), start, nullptr));
         auto result = PatternPartitionWithSource::create_from_parent_list(move(raw_result));
 
         // d. For each Record { [[Type]], [[Value]] } r in result, do
@@ -1037,7 +1036,7 @@ ThrowCompletionOr<Vector<PatternPartitionWithSource>> partition_date_time_range_
     }
 
     // 15. For each Record { [[Pattern]], [[Source]] } rangePatternPart in rangePattern.[[PatternParts]], do
-    TRY(for_each_range_pattern_with_source(*range_pattern, [&](auto const& pattern, auto source) -> ThrowCompletionOr<void> {
+    for_each_range_pattern_with_source(*range_pattern, [&](auto const& pattern, auto source) {
         // a. Let pattern be rangePatternPart.[[Pattern]].
         // b. Let source be rangePatternPart.[[Source]].
 
@@ -1050,8 +1049,8 @@ ThrowCompletionOr<Vector<PatternPartitionWithSource>> partition_date_time_range_
         // e. Let patternParts be PartitionPattern(pattern).
         auto pattern_parts = partition_pattern(pattern);
 
-        // f. Let partResult be ? FormatDateTimePattern(dateTimeFormat, patternParts, z, rangePattern).
-        auto raw_part_result = TRY(format_date_time_pattern(vm, date_time_format, move(pattern_parts), time, &range_pattern.value()));
+        // f. Let partResult be ! FormatDateTimePattern(dateTimeFormat, patternParts, z, rangePattern).
+        auto raw_part_result = MUST(format_date_time_pattern(vm, date_time_format, move(pattern_parts), time, &range_pattern.value()));
         auto part_result = PatternPartitionWithSource::create_from_parent_list(move(raw_part_result));
 
         // g. For each Record { [[Type]], [[Value]] } r in partResult, do
@@ -1062,8 +1061,7 @@ ThrowCompletionOr<Vector<PatternPartitionWithSource>> partition_date_time_range_
 
         // h. Add all elements in partResult to result in order.
         result.extend(move(part_result));
-        return {};
-    }));
+    });
 
     // 16. Return result.
     return result;

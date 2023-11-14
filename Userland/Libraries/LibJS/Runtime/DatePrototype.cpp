@@ -1004,8 +1004,8 @@ JS_DEFINE_NATIVE_FUNCTION(DatePrototype::to_locale_date_string)
     // 3. Let dateFormat be ? CreateDateTimeFormat(%DateTimeFormat%, locales, options, "date", "date").
     auto date_format = TRY(Intl::create_date_time_format(vm, realm.intrinsics().intl_date_time_format_constructor(), locales, options, Intl::OptionRequired::Date, Intl::OptionDefaults::Date));
 
-    // 4. Return ? FormatDateTime(dateFormat, x).
-    auto formatted = TRY(Intl::format_date_time(vm, date_format, time));
+    // 4. Return ! FormatDateTime(dateFormat, x).
+    auto formatted = MUST(Intl::format_date_time(vm, date_format, time));
     return PrimitiveString::create(vm, move(formatted));
 }
 
@@ -1028,8 +1028,8 @@ JS_DEFINE_NATIVE_FUNCTION(DatePrototype::to_locale_string)
     // 3. Let dateFormat be ? CreateDateTimeFormat(%DateTimeFormat%, locales, options, "any", "all").
     auto date_format = TRY(Intl::create_date_time_format(vm, realm.intrinsics().intl_date_time_format_constructor(), locales, options, Intl::OptionRequired::Any, Intl::OptionDefaults::All));
 
-    // 4. Return ? FormatDateTime(dateFormat, x).
-    auto formatted = TRY(Intl::format_date_time(vm, date_format, time));
+    // 4. Return ! FormatDateTime(dateFormat, x).
+    auto formatted = MUST(Intl::format_date_time(vm, date_format, time));
     return PrimitiveString::create(vm, move(formatted));
 }
 
@@ -1052,8 +1052,8 @@ JS_DEFINE_NATIVE_FUNCTION(DatePrototype::to_locale_time_string)
     // 3. Let timeFormat be ? CreateDateTimeFormat(%DateTimeFormat%, locales, options, "time", "time").
     auto time_format = TRY(Intl::create_date_time_format(vm, realm.intrinsics().intl_date_time_format_constructor(), locales, options, Intl::OptionRequired::Time, Intl::OptionDefaults::Time));
 
-    // 4. Return ? FormatDateTime(timeFormat, x).
-    auto formatted = TRY(Intl::format_date_time(vm, time_format, time));
+    // 4. Return ! FormatDateTime(timeFormat, x).
+    auto formatted = MUST(Intl::format_date_time(vm, time_format, time));
     return PrimitiveString::create(vm, move(formatted));
 }
 
