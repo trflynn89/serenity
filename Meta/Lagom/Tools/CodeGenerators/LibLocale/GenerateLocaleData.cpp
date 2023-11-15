@@ -1567,12 +1567,14 @@ Optional<StringView> get_locale_@enum_snake@_mapping(StringView locale, StringVi
         TRY(hashes.try_ensure_capacity(values.size()));
 
         for (auto const& value : values)
-            hashes.set(value.hash(), format_identifier(enum_title, value));
+            hashes.set(CaseInsensitiveASCIIStringViewTraits::hash(value), format_identifier(enum_title, value));
         for (auto const& alias : aliases)
-            hashes.set(alias.alias.hash(), format_identifier(enum_title, alias.alias));
+            hashes.set(CaseInsensitiveASCIIStringViewTraits::hash(alias.alias), format_identifier(enum_title, alias.alias));
 
-        generate_value_from_string(generator, "{}_from_string"sv, enum_title, enum_snake, move(hashes));
+        ValueFromStringOptions options {};
+        options.sensitivity = CaseSensitivity::CaseInsensitive;
 
+        generate_value_from_string(generator, "{}_from_string"sv, enum_title, enum_snake, move(hashes), options);
         return {};
     };
 
@@ -1581,14 +1583,14 @@ Optional<StringView> get_locale_@enum_snake@_mapping(StringView locale, StringVi
         TRY(hashes.try_ensure_capacity(aliases.size()));
 
         for (auto const& alias : aliases)
-            hashes.set(alias.key.hash(), alias.value);
+            hashes.set(CaseInsensitiveASCIIStringViewTraits::hash(alias.key), alias.value);
 
         ValueFromStringOptions options {};
         options.return_type = "StringView"sv;
         options.return_format = "decode_string({})"sv;
+        options.sensitivity = CaseSensitivity::CaseInsensitive;
 
         generate_value_from_string(generator, "resolve_{}_alias"sv, string_index_type, enum_snake, move(hashes), options);
-
         return {};
     };
 
