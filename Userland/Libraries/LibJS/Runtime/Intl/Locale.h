@@ -89,6 +89,17 @@ struct WeekInfo {
     Vector<u8> weekend;    // [[Weekend]]
 };
 
+String get_locale_language(StringView locale);
+String get_locale_language(::Locale::LanguageID const& language_id);
+
+Optional<String> get_locale_script(StringView locale);
+Optional<String> get_locale_script(::Locale::LanguageID const& language_id);
+
+Optional<String> get_locale_region(StringView locale);
+Optional<String> get_locale_region(::Locale::LanguageID const& language_id);
+
+Optional<Vector<String>> get_locale_variants(::Locale::LanguageID const& language_id);
+
 NonnullGCPtr<Array> calendars_of_locale(VM&, Locale const&);
 NonnullGCPtr<Array> collations_of_locale(VM&, Locale const& locale);
 NonnullGCPtr<Array> hour_cycles_of_locale(VM&, Locale const& locale);

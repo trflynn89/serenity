@@ -45,65 +45,70 @@ static ThrowCompletionOr<Optional<String>> get_string_option(VM& vm, Object cons
 // 14.1.2 ApplyOptionsToTag ( tag, options ), https://tc39.es/ecma402/#sec-apply-options-to-tag
 static ThrowCompletionOr<String> apply_options_to_tag(VM& vm, StringView tag, Object const& options)
 {
-    // 1. Assert: Type(tag) is String.
-    // 2. Assert: Type(options) is Object.
-
-    // 3. If ! IsStructurallyValidLanguageTag(tag) is false, throw a RangeError exception.
+    // 1. If IsStructurallyValidLanguageTag(tag) is false, throw a RangeError exception.
     auto locale_id = is_structurally_valid_language_tag(tag);
     if (!locale_id.has_value())
         return vm.throw_completion<RangeError>(ErrorType::IntlInvalidLanguageTag, tag);
 
-    // 4. Let language be ? GetOption(options, "language", string, empty, undefined).
-    // 5. If language is not undefined, then
-    //     a. If language does not match the unicode_language_subtag production, throw a RangeError exception.
+    // 2. Let language be ? GetOption(options, "language", string, empty, undefined).
+    // 3. If language is not undefined, then
+    //     a. If language cannot be matched by the unicode_language_subtag Unicode locale nonterminal, throw a RangeError exception.
     auto language = TRY(get_string_option(vm, options, vm.names.language, ::Locale::is_unicode_language_subtag));
 
-    // 6. Let script be ? GetOption(options, "script", string, empty, undefined).
-    // 7. If script is not undefined, then
-    //     a. If script does not match the unicode_script_subtag production, throw a RangeError exception.
+    // 4. Let script be ? GetOption(options, "script", string, empty, undefined).
+    // 5. If script is not undefined, then
+    //     a. If script cannot be matched by the unicode_script_subtag Unicode locale nonterminal, throw a RangeError exception.
     auto script = TRY(get_string_option(vm, options, vm.names.script, ::Locale::is_unicode_script_subtag));
 
-    // 8. Let region be ? GetOption(options, "region", string, empty, undefined).
-    // 9. If region is not undefined, then
-    //     a. If region does not match the unicode_region_subtag production, throw a RangeError exception.
+    // 6. Let region be ? GetOption(options, "region", string, empty, undefined).
+    // 7. If region is not undefined, then
+    //     a. If region cannot be matched by the unicode_region_subtag Unicode locale nonterminal, throw a RangeError exception.
     auto region = TRY(get_string_option(vm, options, vm.names.region, ::Locale::is_unicode_region_subtag));
 
-    // 10. Set tag to ! CanonicalizeUnicodeLocaleId(tag).
+    // 8. Set tag to CanonicalizeUnicodeLocaleId(tag).
     auto canonicalized_tag = JS::Intl::canonicalize_unicode_locale_id(*locale_id);
 
-    // 11. Assert: tag matches the unicode_locale_id production.
+    // 9. Assert: tag can be matched by the unicode_locale_id Unicode locale nonterminal.
     locale_id = ::Locale::parse_unicode_locale_id(canonicalized_tag);
     VERIFY(locale_id.has_value());
 
-    // 12. Let languageId be the substring of tag corresponding to the unicode_language_id production.
-    auto& language_id = locale_id->language_id;
+    // 10. Let languageId be the longest prefix of tag matched by the unicode_language_id Unicode locale nonterminal.
+    auto language_id = move(locale_id->language_id);
 
-    // 13. If language is not undefined, then
-    if (language.has_value()) {
-        // a. Set languageId to languageId with the substring corresponding to the unicode_language_subtag production replaced by the string language.
-        language_id.language = language.release_value();
-    }
+    // 11. If language is undefined, set language to GetLocaleLanguage(languageId).
+    if (!language.has_value())
+        language = get_locale_language(language_id);
 
-    // 14. If script is not undefined, then
-    if (script.has_value()) {
-        // a. If languageId does not contain a unicode_script_subtag production, then
-        //     i. Set languageId to the string-concatenation of the unicode_language_subtag production of languageId, "-", script, and the rest of languageId.
-        // b. Else,
-        //     i. Set languageId to languageId with the substring corresponding to the unicode_script_subtag production replaced by the string script.
+    // 12. If script is undefined, set script to GetLocaleScript(languageId).
+    if (!script.has_value())
+        script = get_locale_script(language_id);
+
+    // 13. If region is undefined, set region to GetLocaleRegion(languageId).
+    if (!region.has_value())
+        region = get_locale_region(language_id);
+
+    // 14. Let variants be GetLocaleVariants(languageId).
+    auto variants = get_locale_variants(language_id);
+
+    // 15. Set languageId to language.
+    language_id = ::Locale::LanguageID { .language = move(language) };
+
+    // 16. If script is not undefined, set languageId to the string-concatenation of languageId, "-", and script.
+    if (script.has_value())
         language_id.script = script.release_value();
-    }
 
-    // 15. If region is not undefined, then
-    if (region.has_value()) {
-        // a. If languageId does not contain a unicode_region_subtag production, then
-        //     i. Set languageId to the string-concatenation of the unicode_language_subtag production of languageId, the substring corresponding to "-"` and the `unicode_script_subtag` production if present, `"-", region, and the rest of languageId.
-        // b. Else,
-        //     i. Set languageId to languageId with the substring corresponding to the unicode_region_subtag production replaced by the string region.
+    // 17. If region is not undefined, set languageId to the string-concatenation of languageId, "-", and region.
+    if (region.has_value())
         language_id.region = region.release_value();
-    }
 
-    // 16. Set tag to tag with the substring corresponding to the unicode_language_id production replaced by the string languageId.
-    // 17. Return ! CanonicalizeUnicodeLocaleId(tag).
+    // 18. If variants is not undefined, set languageId to the string-concatenation of languageId, "-", and variants.
+    if (variants.has_value())
+        language_id.variants = variants.release_value();
+
+    // 19. Set tag to tag with the substring matched by the unicode_language_id Unicode locale nonterminal replaced by the string languageId.
+    locale_id->language_id = move(language_id);
+
+    // 20. Return CanonicalizeUnicodeLocaleId(tag).
     return JS::Intl::canonicalize_unicode_locale_id(*locale_id);
 }
 

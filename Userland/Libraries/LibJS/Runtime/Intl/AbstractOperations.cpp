@@ -30,54 +30,78 @@ Optional<::Locale::LocaleID> is_structurally_valid_language_tag(StringView local
         quick_sort(variants);
 
         for (size_t i = 0; i < variants.size() - 1; ++i) {
-            if (variants[i].equals_ignoring_case(variants[i + 1]))
+            if (variants[i] == variants[i + 1])
                 return true;
         }
 
         return false;
     };
 
-    // IsStructurallyValidLanguageTag returns true if all of the following conditions hold, false otherwise:
+    // 1. Let lowerLocale be the ASCII-lowercase of locale.
+    auto lower_locale = locale.to_lowercase_string();
 
-    // locale can be generated from the EBNF grammar for unicode_locale_id in Unicode Technical Standard #35 LDML § 3.2 Unicode Locale Identifier;
-    auto locale_id = ::Locale::parse_unicode_locale_id(locale);
+    // 2. If lowerLocale cannot be matched by the unicode_locale_id Unicode locale nonterminal, return false.
+    auto locale_id = ::Locale::parse_unicode_locale_id(lower_locale);
     if (!locale_id.has_value())
         return {};
 
-    // locale does not use any of the backwards compatibility syntax described in Unicode Technical Standard #35 LDML § 3.3 BCP 47 Conformance;
+    // 3. If lowerLocale uses any of the backwards compatibility syntax described in Unicode Technical Standard #35 Part 1 Core, Section 3.3 BCP 47 Conformance, return false.
     // https://unicode.org/reports/tr35/#BCP_47_Conformance
-    if (locale.contains('_') || locale_id->language_id.is_root || !locale_id->language_id.language.has_value())
+    if (lower_locale.contains('_') || locale_id->language_id.is_root || !locale_id->language_id.language.has_value())
         return {};
 
-    // the unicode_language_id within locale contains no duplicate unicode_variant_subtag subtags; and
-    if (contains_duplicate_variant(locale_id->language_id.variants))
-        return {};
+    // 4. Let languageId be the longest prefix of lowerLocale matched by the unicode_language_id Unicode locale nonterminal.
+    auto const& language_id = locale_id->language_id;
 
-    // if locale contains an extensions* component, that component
-    Vector<char> unique_keys;
-    for (auto& extension : locale_id->extensions) {
-        // does not contain any other_extensions components with duplicate [alphanum-[tTuUxX]] subtags,
-        // contains at most one unicode_locale_extensions component,
-        // contains at most one transformed_extensions component, and
-        char key = extension.visit(
-            [](::Locale::LocaleExtension const&) { return 'u'; },
-            [](::Locale::TransformedExtension const&) { return 't'; },
-            [](::Locale::OtherExtension const& ext) { return static_cast<char>(to_ascii_lowercase(ext.key)); });
+    // 5. Let variants be GetLocaleVariants(languageId).
+    auto variants = get_locale_variants(language_id);
 
-        if (unique_keys.contains_slow(key))
+    // 6. If variants is not undefined, then
+    if (variants.has_value()) {
+        // a. If variants contains any duplicate subtags, return false.
+        if (contains_duplicate_variant(*variants))
             return {};
-
-        unique_keys.append(key);
-
-        // if a transformed_extensions component that contains a tlang component is present, then
-        // the tlang component contains no duplicate unicode_variant_subtag subtags.
-        if (auto* transformed = extension.get_pointer<::Locale::TransformedExtension>()) {
-            auto& language = transformed->language;
-            if (language.has_value() && contains_duplicate_variant(language->variants))
-                return {};
-        }
     }
 
+    // 7. Let allExtensions be the suffix of lowerLocale following languageId.
+    // 8. If allExtensions contains a substring matched by the pu_extensions Unicode locale nonterminal, let extensions be the prefix of allExtensions preceding the longest such substring. Otherwise, let extensions be allExtensions.
+    // NOTE: LibLocale stores private use extensions in a separate list (locale_id->private_use_extensions).
+    auto& extensions = locale_id->extensions;
+    Vector<char> unique_keys;
+
+    // 9. If extensions is not the empty String, then
+    for (auto& extension : extensions) {
+        auto key = extension.visit(
+            [](::Locale::LocaleExtension const&) { return 'u'; },
+            [](::Locale::TransformedExtension const&) { return 't'; },
+            [](::Locale::OtherExtension const& ext) { return ext.key; });
+
+        // a. If extensions contains any duplicate singleton subtags, return false.
+        if (unique_keys.contains_slow(key))
+            return {};
+        unique_keys.append(key);
+
+        // b. Let transformExtension be the longest substring of extensions matched by the transformed_extensions Unicode locale nonterminal. If there is no such substring, return true.
+        auto* transformed = extension.get_pointer<::Locale::TransformedExtension>();
+        if (!transformed)
+            continue;
+
+        // c. Assert: The substring of transformExtension from 0 to 3 is "-t-".
+        // d. Let tPrefix be the substring of transformExtension from 3.
+        // e. Let tlang be the longest prefix of tPrefix matched by the tlang Unicode locale nonterminal. If there is no such prefix, return true.
+        auto& transformed_language = transformed->language;
+        if (!transformed_language.has_value())
+            continue;
+
+        // f. Let tlangRefinements be the longest suffix of tlang following a non-empty prefix matched by the unicode_language_subtag Unicode locale nonterminal.
+        auto& transformed_refinements = transformed_language->variants;
+
+        // g. If tlangRefinements contains any duplicate substrings matched greedily by the unicode_variant_subtag Unicode locale nonterminal, return false.
+        if (contains_duplicate_variant(transformed_refinements))
+            return {};
+    }
+
+    // 10. Return true.
     return locale_id;
 }
 

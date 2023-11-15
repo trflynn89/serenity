@@ -52,6 +52,101 @@ Locale::Locale(Object& prototype)
 {
 }
 
+// 14.5.1 GetLocaleLanguage ( locale ), https://tc39.es/ecma402/#sec-getlocalelanguage
+String get_locale_language(StringView locale)
+{
+    // 1. Assert: locale can be matched by the unicode_locale_id Unicode locale nonterminal.
+    auto locale_id = ::Locale::parse_unicode_locale_id(locale);
+    VERIFY(locale_id.has_value());
+
+    // 2. Let languageId be the longest prefix of locale matched by the unicode_language_id Unicode locale nonterminal.
+    auto const& language_id = locale_id->language_id;
+
+    return get_locale_language(language_id);
+}
+
+// 14.5.1 GetLocaleLanguage ( locale ), https://tc39.es/ecma402/#sec-getlocalelanguage
+String get_locale_language(::Locale::LanguageID const& language_id)
+{
+    // 3. Assert: The first subtag of languageId can be matched by the unicode_language_subtag Unicode locale nonterminal.
+    VERIFY(language_id.language.has_value());
+
+    // 4. Return the first subtag of languageId.
+    return *language_id.language;
+}
+
+// 14.5.2 GetLocaleScript ( locale ), https://tc39.es/ecma402/#sec-getlocalescript
+Optional<String> get_locale_script(StringView locale)
+{
+    // 1. Assert: locale can be matched by the unicode_locale_id Unicode locale nonterminal.
+    auto locale_id = ::Locale::parse_unicode_locale_id(locale);
+    VERIFY(locale_id.has_value());
+
+    // 2. Let languageId be the longest prefix of locale matched by the unicode_language_id Unicode locale nonterminal.
+    auto const& language_id = locale_id->language_id;
+
+    return get_locale_script(language_id);
+}
+
+// 14.5.2 GetLocaleScript ( locale ), https://tc39.es/ecma402/#sec-getlocalescript
+Optional<String> get_locale_script(::Locale::LanguageID const& language_id)
+{
+    // 3. Assert: languageId contains at most one subtag that can be matched by the unicode_script_subtag Unicode locale nonterminal.
+    // 4. If languageId contains a subtag matched by the unicode_script_subtag Unicode locale nonterminal, return that subtag.
+    if (language_id.script.has_value())
+        return *language_id.script;
+
+    // 5. Return undefined.
+    return {};
+}
+
+// 14.5.3 GetLocaleRegion ( locale ), https://tc39.es/ecma402/#sec-getlocaleregion
+Optional<String> get_locale_region(StringView locale)
+{
+    // 1. Assert: locale can be matched by the unicode_locale_id Unicode locale nonterminal.
+    auto locale_id = ::Locale::parse_unicode_locale_id(locale);
+    VERIFY(locale_id.has_value());
+
+    // 2. Let languageId be the longest prefix of locale matched by the unicode_language_id Unicode locale nonterminal.
+    auto const& language_id = locale_id->language_id;
+
+    return get_locale_region(language_id);
+}
+
+// 14.5.3 GetLocaleRegion ( locale ), https://tc39.es/ecma402/#sec-getlocaleregion
+Optional<String> get_locale_region(::Locale::LanguageID const& language_id)
+{
+    // 3. NOTE: A unicode_region_subtag subtag is only valid immediately after an initial unicode_language_subtag subtag, optionally with a single unicode_script_subtag subtag between them. In that position, unicode_region_subtag cannot be confused with any other valid subtag because all their productions are disjoint.
+    // 4. Assert: The first subtag of languageId can be matched by the unicode_language_subtag Unicode locale nonterminal.
+    VERIFY(language_id.language.has_value());
+
+    // 5. Let languageIdTail be the suffix of languageId following the first subtag.
+    // 6. Assert: languageIdTail contains at most one subtag that can be matched by the unicode_region_subtag Unicode locale nonterminal.
+    // 7. If languageIdTail contains a subtag matched by the unicode_region_subtag Unicode locale nonterminal, return that subtag.
+    if (language_id.region.has_value())
+        return *language_id.region;
+
+    // 8. Return undefined.
+    return {};
+}
+
+// 14.5.4 GetLocaleVariants ( locale ), https://tc39.es/ecma402/#sec-getlocalevariants
+Optional<Vector<String>> get_locale_variants(::Locale::LanguageID const& language_id)
+{
+    // 1. Assert: locale can be matched by the unicode_locale_id Unicode locale nonterminal.
+
+    // 2. Let languageId be the longest prefix of locale matched by the unicode_language_id Unicode locale nonterminal.
+    // 3. If there is a non-empty suffix of languageId that is a consecutive sequence of substrings in which each element is a "-" followed by a substring that is matched by the unicode_variant_subtag Unicode locale nonterminal, then
+    if (!language_id.variants.is_empty()) {
+        // a. Let variants be the longest such suffix.
+        // b. Return the substring of variants from 1.
+        return language_id.variants;
+    }
+
+    // 4. Return undefined.
+    return {};
+}
+
 // 1.1.1 CreateArrayFromListOrRestricted ( list , restricted )
 static NonnullGCPtr<Array> create_array_from_list_or_restricted(VM& vm, Vector<StringView> list, Optional<String> restricted)
 {

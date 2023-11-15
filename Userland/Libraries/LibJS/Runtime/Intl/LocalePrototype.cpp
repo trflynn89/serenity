@@ -173,14 +173,8 @@ JS_DEFINE_NATIVE_FUNCTION(LocalePrototype::language)
     // 2. Perform ? RequireInternalSlot(loc, [[InitializedLocale]]).
     auto locale_object = TRY(typed_this_object(vm));
 
-    // 3. Let locale be loc.[[Locale]].
-    auto locale = ::Locale::parse_unicode_locale_id(locale_object->locale());
-
-    // 4. Assert: locale matches the unicode_locale_id production.
-    VERIFY(locale.has_value());
-
-    // 5. Return the substring of locale corresponding to the unicode_language_subtag production of the unicode_language_id.
-    return PrimitiveString::create(vm, locale->language_id.language.release_value());
+    // 3. Return GetLocaleLanguage(loc.[[Locale]]).
+    return PrimitiveString::create(vm, get_locale_language(locale_object->locale()));
 }
 
 // 14.3.14 get Intl.Locale.prototype.script, https://tc39.es/ecma402/#sec-Intl.Locale.prototype.script
@@ -190,18 +184,11 @@ JS_DEFINE_NATIVE_FUNCTION(LocalePrototype::script)
     // 2. Perform ? RequireInternalSlot(loc, [[InitializedLocale]]).
     auto locale_object = TRY(typed_this_object(vm));
 
-    // 3. Let locale be loc.[[Locale]].
-    auto locale = ::Locale::parse_unicode_locale_id(locale_object->locale());
+    // 3. Return GetLocaleScript(loc.[[Locale]]).
+    if (auto script = get_locale_script(locale_object->locale()); script.has_value())
+        return PrimitiveString::create(vm, script.release_value());
 
-    // 4. Assert: locale matches the unicode_locale_id production.
-    VERIFY(locale.has_value());
-
-    // 5. If the unicode_language_id production of locale does not contain the ["-" unicode_script_subtag] sequence, return undefined.
-    if (!locale->language_id.script.has_value())
-        return js_undefined();
-
-    // 6. Return the substring of locale corresponding to the unicode_script_subtag production of the unicode_language_id.
-    return PrimitiveString::create(vm, locale->language_id.script.release_value());
+    return js_undefined();
 }
 
 // 14.3.15 get Intl.Locale.prototype.region, https://tc39.es/ecma402/#sec-Intl.Locale.prototype.region
@@ -211,18 +198,11 @@ JS_DEFINE_NATIVE_FUNCTION(LocalePrototype::region)
     // 2. Perform ? RequireInternalSlot(loc, [[InitializedLocale]]).
     auto locale_object = TRY(typed_this_object(vm));
 
-    // 3. Let locale be loc.[[Locale]].
-    auto locale = ::Locale::parse_unicode_locale_id(locale_object->locale());
+    // 3. Return GetLocaleRegion(loc.[[Locale]]).
+    if (auto region = get_locale_region(locale_object->locale()); region.has_value())
+        return PrimitiveString::create(vm, region.release_value());
 
-    // 4. Assert: locale matches the unicode_locale_id production.
-    VERIFY(locale.has_value());
-
-    // 5. If the unicode_language_id production of locale does not contain the ["-" unicode_region_subtag] sequence, return undefined.
-    if (!locale->language_id.region.has_value())
-        return js_undefined();
-
-    // 6. Return the substring of locale corresponding to the unicode_region_subtag production of the unicode_language_id.
-    return PrimitiveString::create(vm, locale->language_id.region.release_value());
+    return js_undefined();
 }
 
 #define JS_ENUMERATE_LOCALE_INFO_PROPERTIES \
