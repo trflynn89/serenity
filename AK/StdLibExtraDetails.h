@@ -26,7 +26,7 @@ using FalseType = IntegralConstant<bool, false>;
 using TrueType = IntegralConstant<bool, true>;
 
 template<class T>
-using AddConst = const T;
+using AddConst = T const;
 
 template<class T>
 struct __AddConstToReferencedType {
@@ -91,6 +91,15 @@ inline constexpr bool __IsPointerHelper<T*> = true;
 template<class T>
 inline constexpr bool IsPointer = __IsPointerHelper<RemoveCV<T>>;
 
+template<class T>
+inline constexpr bool IsArray = false;
+
+template<class T>
+inline constexpr bool IsArray<T[]> = true;
+
+template<class T, size_t N>
+inline constexpr bool IsArray<T[N]> = true;
+
 template<class>
 inline constexpr bool IsFunction = false;
 template<class Ret, class... Args>
@@ -126,9 +135,9 @@ inline constexpr bool IsFunction<Ret(Args...) const volatile&> = true;
 template<class Ret, class... Args>
 inline constexpr bool IsFunction<Ret(Args..., ...) const volatile&> = true;
 template<class Ret, class... Args>
-inline constexpr bool IsFunction<Ret(Args...)&&> = true;
+inline constexpr bool IsFunction<Ret(Args...) &&> = true;
 template<class Ret, class... Args>
-inline constexpr bool IsFunction<Ret(Args..., ...)&&> = true;
+inline constexpr bool IsFunction<Ret(Args..., ...) &&> = true;
 template<class Ret, class... Args>
 inline constexpr bool IsFunction<Ret(Args...) const&&> = true;
 template<class Ret, class... Args>

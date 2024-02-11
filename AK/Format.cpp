@@ -109,12 +109,31 @@ ErrorOr<void> vformat_impl(TypeErasedFormatParams& params, FormatBuilder& builde
     auto& parameter = params.parameters().at(specifier.index);
 
     FormatParser argparser { specifier.flags };
-    TRY(parameter.formatter(params, builder, argparser, parameter.value));
+    TRY(parameter.format(params, builder, argparser));
     TRY(vformat_impl(params, builder, parser));
     return {};
 }
 
 } // namespace AK::{anonymous}
+
+ErrorOr<void> TypeErasedParameter::format(TypeErasedFormatParams& params, FormatBuilder& builder, FormatParser& parser) const
+{
+    return visit([&]<typename T>(T value) {
+        if constexpr (IsSame<T, CustomValue>) {
+            return value.formatter(params, builder, parser, value.value);
+        } else if constexpr (IsSame<T, TrivialStringView>) {
+            Formatter<StringView> formatter;
+            formatter.parse(params, parser);
+
+            return formatter.format(builder, StringView { value.characters, value.length });
+        } else {
+            Formatter<T> formatter;
+            formatter.parse(params, parser);
+
+            return formatter.format(builder, value);
+        }
+    });
+}
 
 FormatParser::FormatParser(StringView input)
     : GenericLexer(input)
