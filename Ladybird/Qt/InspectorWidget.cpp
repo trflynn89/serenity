@@ -5,8 +5,10 @@
  */
 
 #include "InspectorWidget.h"
+#include <Ladybird/Qt/ContextMenu.h>
 #include <Ladybird/Qt/StringUtils.h>
 #include <LibWebView/Attribute.h>
+#include <LibWebView/ContextMenu.h>
 #include <LibWebView/InspectorClient.h>
 #include <QAction>
 #include <QCloseEvent>
@@ -29,80 +31,37 @@ InspectorWidget::InspectorWidget(QWidget* tab, WebContentView& content_view)
 
     m_inspector_client = make<WebView::InspectorClient>(content_view, *m_inspector_view);
 
-    m_edit_node_action = new QAction("&Edit node", this);
-    connect(m_edit_node_action, &QAction::triggered, [this]() { m_inspector_client->context_menu_edit_dom_node(); });
-
-    m_copy_node_action = new QAction("&Copy HTML", this);
-    connect(m_copy_node_action, &QAction::triggered, [this]() { m_inspector_client->context_menu_copy_dom_node(); });
-
-    m_screenshot_node_action = new QAction("Take node &screenshot", this);
-    connect(m_screenshot_node_action, &QAction::triggered, [this]() { m_inspector_client->context_menu_screenshot_dom_node(); });
-
-    m_create_child_element_action = new QAction("Create child &element", this);
-    connect(m_create_child_element_action, &QAction::triggered, [this]() { m_inspector_client->context_menu_create_child_element(); });
-
-    m_create_child_text_node_action = new QAction("Create child &text node", this);
-    connect(m_create_child_text_node_action, &QAction::triggered, [this]() { m_inspector_client->context_menu_create_child_text_node(); });
-
-    m_clone_node_action = new QAction("C&lone node", this);
-    connect(m_clone_node_action, &QAction::triggered, [this]() { m_inspector_client->context_menu_clone_dom_node(); });
-
-    m_delete_node_action = new QAction("&Delete node", this);
-    connect(m_delete_node_action, &QAction::triggered, [this]() { m_inspector_client->context_menu_remove_dom_node(); });
-
-    m_add_attribute_action = new QAction("&Add attribute", this);
-    connect(m_add_attribute_action, &QAction::triggered, [this]() { m_inspector_client->context_menu_add_dom_node_attribute(); });
-
-    m_remove_attribute_action = new QAction("&Remove attribute", this);
-    connect(m_remove_attribute_action, &QAction::triggered, [this]() { m_inspector_client->context_menu_remove_dom_node_attribute(); });
-
-    m_copy_attribute_value_action = new QAction("Copy attribute &value", this);
-    connect(m_copy_attribute_value_action, &QAction::triggered, [this]() { m_inspector_client->context_menu_copy_dom_node_attribute_value(); });
-
-    m_dom_node_text_context_menu = new QMenu("DOM text context menu", this);
-    m_dom_node_text_context_menu->addAction(m_edit_node_action);
-    m_dom_node_text_context_menu->addAction(m_copy_node_action);
-    m_dom_node_text_context_menu->addSeparator();
-    m_dom_node_text_context_menu->addAction(m_delete_node_action);
-
-    auto* create_child_menu = new QMenu("Create child", this);
-    create_child_menu->addAction(m_create_child_element_action);
-    create_child_menu->addAction(m_create_child_text_node_action);
-
-    m_dom_node_tag_context_menu = new QMenu("DOM tag context menu", this);
-    m_dom_node_tag_context_menu->addAction(m_edit_node_action);
-    m_dom_node_tag_context_menu->addSeparator();
-    m_dom_node_tag_context_menu->addAction(m_add_attribute_action);
-    m_dom_node_tag_context_menu->addMenu(create_child_menu);
-    m_dom_node_tag_context_menu->addAction(m_clone_node_action);
-    m_dom_node_tag_context_menu->addAction(m_delete_node_action);
-    m_dom_node_tag_context_menu->addSeparator();
-    m_dom_node_tag_context_menu->addAction(m_copy_node_action);
-    m_dom_node_tag_context_menu->addAction(m_screenshot_node_action);
-
-    m_dom_node_attribute_context_menu = new QMenu("DOM attribute context menu", this);
-    m_dom_node_attribute_context_menu->addAction(m_edit_node_action);
-    m_dom_node_attribute_context_menu->addAction(m_copy_attribute_value_action);
-    m_dom_node_attribute_context_menu->addAction(m_remove_attribute_action);
-    m_dom_node_attribute_context_menu->addSeparator();
-    m_dom_node_attribute_context_menu->addAction(m_add_attribute_action);
-    m_dom_node_attribute_context_menu->addMenu(create_child_menu);
-    m_dom_node_attribute_context_menu->addAction(m_clone_node_action);
-    m_dom_node_attribute_context_menu->addAction(m_delete_node_action);
-    m_dom_node_attribute_context_menu->addSeparator();
-    m_dom_node_attribute_context_menu->addAction(m_copy_node_action);
-    m_dom_node_attribute_context_menu->addAction(m_screenshot_node_action);
-
     m_inspector_client->on_requested_dom_node_text_context_menu = [this](auto position) {
-        m_edit_node_action->setText("&Edit text");
-        m_copy_node_action->setText("&Copy text");
+        if (!m_dom_node_text_context_menu)
+            m_dom_node_text_context_menu = create_context_menu(this, m_inspector_client->dom_node_text_context_menu());
+
+        update_context_menu_action_names(m_inspector_client->dom_node_text_context_menu(), [&](auto id, auto name_format) -> Optional<String> {
+            switch (static_cast<WebView::InspectorClient::ContextMenuActionIDs>(id)) {
+            case WebView::InspectorClient::ContextMenuActionIDs::EditDOMNode:
+            case WebView::InspectorClient::ContextMenuActionIDs::CopyDOMNode:
+                return MUST(String::formatted(name_format, "text"sv));
+            default:
+                return {};
+            }
+        });
 
         m_dom_node_text_context_menu->exec(m_inspector_view->map_point_to_global_position(position));
     };
 
     m_inspector_client->on_requested_dom_node_tag_context_menu = [this](auto position, auto const& tag) {
-        m_edit_node_action->setText(qstring_from_ak_string(MUST(String::formatted("&Edit \"{}\"", tag))));
-        m_copy_node_action->setText("&Copy HTML");
+        if (!m_dom_node_tag_context_menu)
+            m_dom_node_tag_context_menu = create_context_menu(this, m_inspector_client->dom_node_tag_context_menu());
+
+        update_context_menu_action_names(m_inspector_client->dom_node_tag_context_menu(), [&](auto id, auto name_format) -> Optional<String> {
+            switch (static_cast<WebView::InspectorClient::ContextMenuActionIDs>(id)) {
+            case WebView::InspectorClient::ContextMenuActionIDs::EditDOMNode:
+                return MUST(String::formatted(name_format, tag));
+            case WebView::InspectorClient::ContextMenuActionIDs::CopyDOMNode:
+                return "&Copy HTML"_string;
+            default:
+                return {};
+            }
+        });
 
         m_dom_node_tag_context_menu->exec(m_inspector_view->map_point_to_global_position(position));
     };
@@ -110,12 +69,28 @@ InspectorWidget::InspectorWidget(QWidget* tab, WebContentView& content_view)
     m_inspector_client->on_requested_dom_node_attribute_context_menu = [this](auto position, auto const&, WebView::Attribute const& attribute) {
         static constexpr size_t MAX_ATTRIBUTE_VALUE_LENGTH = 32;
 
-        m_copy_node_action->setText("&Copy HTML");
-        m_edit_node_action->setText(qstring_from_ak_string(MUST(String::formatted("&Edit attribute \"{}\"", attribute.name))));
-        m_remove_attribute_action->setText(qstring_from_ak_string(MUST(String::formatted("&Remove attribute \"{}\"", attribute.name))));
-        m_copy_attribute_value_action->setText(qstring_from_ak_string(MUST(String::formatted("Copy attribute &value \"{:.{}}{}\"",
+        if (!m_dom_node_attribute_context_menu)
+            m_dom_node_attribute_context_menu = create_context_menu(this, m_inspector_client->dom_node_attribute_context_menu());
+
+        auto attribute_name = MUST(String::formatted("attribute \"{}\"", attribute.name));
+
+        auto attribute_value = MUST(String::formatted("{:.{}}{}",
             attribute.value, MAX_ATTRIBUTE_VALUE_LENGTH,
-            attribute.value.bytes_as_string_view().length() > MAX_ATTRIBUTE_VALUE_LENGTH ? "..."sv : ""sv))));
+            attribute.value.bytes_as_string_view().length() > MAX_ATTRIBUTE_VALUE_LENGTH ? "..."sv : ""sv));
+
+        update_context_menu_action_names(m_inspector_client->dom_node_attribute_context_menu(), [&](auto id, auto name_format) -> Optional<String> {
+            switch (static_cast<WebView::InspectorClient::ContextMenuActionIDs>(id)) {
+            case WebView::InspectorClient::ContextMenuActionIDs::EditDOMNode:
+            case WebView::InspectorClient::ContextMenuActionIDs::RemoveDOMNodeAttribute:
+                return MUST(String::formatted(name_format, attribute_name));
+            case WebView::InspectorClient::ContextMenuActionIDs::CopyDOMNode:
+                return "&Copy HTML"_string;
+            case WebView::InspectorClient::ContextMenuActionIDs::CopyDOMNodeAttributeValue:
+                return MUST(String::formatted(name_format, attribute_value));
+            default:
+                return {};
+            }
+        });
 
         m_dom_node_attribute_context_menu->exec(m_inspector_view->map_point_to_global_position(position));
     };

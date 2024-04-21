@@ -10,6 +10,7 @@
 
 namespace WebView {
 
+class ContextMenu;
 class CookieJar;
 class Database;
 class InspectorClient;
@@ -18,6 +19,7 @@ class ProcessManager;
 class ViewImplementation;
 class WebContentClient;
 
+struct Action;
 struct Attribute;
 struct CookieStorageKey;
 struct ProcessHandle;

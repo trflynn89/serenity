@@ -11,7 +11,6 @@
 #include <LibWebView/Forward.h>
 #include <QWidget>
 
-class QAction;
 class QMenu;
 
 namespace Ladybird {
@@ -47,17 +46,6 @@ private:
     QMenu* m_dom_node_text_context_menu { nullptr };
     QMenu* m_dom_node_tag_context_menu { nullptr };
     QMenu* m_dom_node_attribute_context_menu { nullptr };
-
-    QAction* m_edit_node_action { nullptr };
-    QAction* m_copy_node_action { nullptr };
-    QAction* m_screenshot_node_action { nullptr };
-    QAction* m_create_child_element_action { nullptr };
-    QAction* m_create_child_text_node_action { nullptr };
-    QAction* m_clone_node_action { nullptr };
-    QAction* m_delete_node_action { nullptr };
-    QAction* m_add_attribute_action { nullptr };
-    QAction* m_remove_attribute_action { nullptr };
-    QAction* m_copy_attribute_value_action { nullptr };
 };
 
 }

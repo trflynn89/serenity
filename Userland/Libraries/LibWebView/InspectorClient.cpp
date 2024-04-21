@@ -10,6 +10,7 @@
 #include <AK/StringBuilder.h>
 #include <LibJS/MarkupGenerator.h>
 #include <LibWeb/Infra/Strings.h>
+#include <LibWebView/ContextMenu.h>
 #include <LibWebView/InspectorClient.h>
 #include <LibWebView/SourceHighlighter.h>
 
@@ -175,6 +176,7 @@ InspectorClient::InspectorClient(ViewImplementation& content_web_view, ViewImple
         m_content_web_view.js_console_input(script.to_byte_string());
     };
 
+    initialize_context_menus();
     load_inspector();
 }
 
@@ -249,97 +251,52 @@ void InspectorClient::select_node(i32 node_id)
 
 void InspectorClient::context_menu_edit_dom_node()
 {
-    VERIFY(m_context_menu_data.has_value());
-
-    auto script = MUST(String::formatted("inspector.editDOMNodeID({});", m_context_menu_data->dom_node_id));
-    m_inspector_web_view.run_javascript(script);
-
-    m_context_menu_data.clear();
+    m_context_menu_edit_dom_node->action();
 }
 
 void InspectorClient::context_menu_copy_dom_node()
 {
-    VERIFY(m_context_menu_data.has_value());
-
-    m_content_web_view.get_dom_node_html(m_context_menu_data->dom_node_id);
-    m_context_menu_data.clear();
+    m_context_menu_copy_dom_node->action();
 }
 
 void InspectorClient::context_menu_screenshot_dom_node()
 {
-    VERIFY(m_context_menu_data.has_value());
-
-    m_content_web_view.take_dom_node_screenshot(m_context_menu_data->dom_node_id)
-        ->when_resolved([this](auto const& path) {
-            append_console_message(MUST(String::formatted("Screenshot saved to: {}", path)));
-        })
-        .when_rejected([this](auto const& error) {
-            append_console_warning(MUST(String::formatted("Warning: {}", error)));
-        });
-
-    m_context_menu_data.clear();
+    m_context_menu_screenshot_dom_node->action();
 }
 
 void InspectorClient::context_menu_create_child_element()
 {
-    VERIFY(m_context_menu_data.has_value());
-
-    m_content_web_view.create_child_element(m_context_menu_data->dom_node_id);
-    m_context_menu_data.clear();
+    m_context_menu_create_child_element->action();
 }
 
 void InspectorClient::context_menu_create_child_text_node()
 {
-    VERIFY(m_context_menu_data.has_value());
-
-    m_content_web_view.create_child_text_node(m_context_menu_data->dom_node_id);
-    m_context_menu_data.clear();
+    m_context_menu_create_child_text_node->action();
 }
 
 void InspectorClient::context_menu_clone_dom_node()
 {
-    VERIFY(m_context_menu_data.has_value());
-
-    m_content_web_view.clone_dom_node(m_context_menu_data->dom_node_id);
-    m_context_menu_data.clear();
+    m_context_menu_clone_dom_node->action();
 }
 
 void InspectorClient::context_menu_remove_dom_node()
 {
-    VERIFY(m_context_menu_data.has_value());
-
-    m_content_web_view.remove_dom_node(m_context_menu_data->dom_node_id);
-    m_context_menu_data.clear();
+    m_context_menu_delete_dom_node->action();
 }
 
 void InspectorClient::context_menu_add_dom_node_attribute()
 {
-    VERIFY(m_context_menu_data.has_value());
-
-    auto script = MUST(String::formatted("inspector.addAttributeToDOMNodeID({});", m_context_menu_data->dom_node_id));
-    m_inspector_web_view.run_javascript(script);
-
-    m_context_menu_data.clear();
+    m_context_menu_add_dom_node_attribute->action();
 }
 
 void InspectorClient::context_menu_remove_dom_node_attribute()
 {
-    VERIFY(m_context_menu_data.has_value());
-    VERIFY(m_context_menu_data->attribute.has_value());
-
-    m_content_web_view.replace_dom_node_attribute(m_context_menu_data->dom_node_id, m_context_menu_data->attribute->name, {});
-    m_context_menu_data.clear();
+    m_context_menu_remove_dom_node_attribute->action();
 }
 
 void InspectorClient::context_menu_copy_dom_node_attribute_value()
 {
-    VERIFY(m_context_menu_data.has_value());
-    VERIFY(m_context_menu_data->attribute.has_value());
-
-    if (m_content_web_view.on_insert_clipboard_entry)
-        m_content_web_view.on_insert_clipboard_entry(m_context_menu_data->attribute->value, "unspecified"_string, "text/plain"_string);
-
-    m_context_menu_data.clear();
+    m_context_menu_copy_dom_node_attribute_value->action();
 }
 
 void InspectorClient::load_inspector()
@@ -707,6 +664,115 @@ void InspectorClient::end_console_group()
 {
     static constexpr auto script = "inspector.endConsoleGroup();"sv;
     m_inspector_web_view.run_javascript(script);
+}
+
+InspectorClient::ContextMenuData InspectorClient::take_context_menu_data()
+{
+    VERIFY(m_context_menu_data.has_value());
+    return m_context_menu_data.release_value();
+}
+
+void InspectorClient::initialize_context_menus()
+{
+    m_context_menu_edit_dom_node = adopt_ref(*new Action("&Edit {}"sv, ContextMenuActionIDs::EditDOMNode, [this]() {
+        auto context_menu_data = take_context_menu_data();
+
+        auto script = MUST(String::formatted("inspector.editDOMNodeID({});", context_menu_data.dom_node_id));
+        m_inspector_web_view.run_javascript(script);
+    }));
+
+    m_context_menu_copy_dom_node = adopt_ref(*new Action("&Copy {}"sv, ContextMenuActionIDs::CopyDOMNode, [this]() {
+        auto context_menu_data = take_context_menu_data();
+        m_content_web_view.get_dom_node_html(context_menu_data.dom_node_id);
+    }));
+
+    m_context_menu_clone_dom_node = adopt_ref(*new Action("C&lone node"sv, [this]() {
+        auto context_menu_data = take_context_menu_data();
+        m_content_web_view.clone_dom_node(context_menu_data.dom_node_id);
+    }));
+
+    m_context_menu_delete_dom_node = adopt_ref(*new Action("&Delete node"sv, [this]() {
+        auto context_menu_data = take_context_menu_data();
+        m_content_web_view.remove_dom_node(context_menu_data.dom_node_id);
+    }));
+
+    m_context_menu_screenshot_dom_node = adopt_ref(*new Action("Take node &screenshot"sv, [this]() {
+        auto context_menu_data = take_context_menu_data();
+
+        m_content_web_view.take_dom_node_screenshot(context_menu_data.dom_node_id)
+            ->when_resolved([this](auto const& path) {
+                append_console_message(MUST(String::formatted("Screenshot saved to: {}", path)));
+            })
+            .when_rejected([this](auto const& error) {
+                append_console_warning(MUST(String::formatted("Warning: {}", error)));
+            });
+    }));
+
+    m_context_menu_create_child_element = adopt_ref(*new Action("Create child &element"sv, [this]() {
+        auto context_menu_data = take_context_menu_data();
+        m_content_web_view.create_child_element(context_menu_data.dom_node_id);
+    }));
+
+    m_context_menu_create_child_text_node = adopt_ref(*new Action("Create child &text node"sv, [this]() {
+        auto context_menu_data = take_context_menu_data();
+        m_content_web_view.create_child_text_node(context_menu_data.dom_node_id);
+    }));
+
+    m_context_menu_add_dom_node_attribute = adopt_ref(*new Action("&Add attribute"sv, [this]() {
+        auto context_menu_data = take_context_menu_data();
+
+        auto script = MUST(String::formatted("inspector.addAttributeToDOMNodeID({});", context_menu_data.dom_node_id));
+        m_inspector_web_view.run_javascript(script);
+    }));
+
+    m_context_menu_copy_dom_node_attribute_value = adopt_ref(*new Action("Copy attribute &value \"{}\""sv, ContextMenuActionIDs::CopyDOMNodeAttributeValue, [this]() {
+        auto context_menu_data = take_context_menu_data();
+        VERIFY(context_menu_data.attribute.has_value());
+
+        if (m_content_web_view.on_insert_clipboard_entry)
+            m_content_web_view.on_insert_clipboard_entry(context_menu_data.attribute->value, "unspecified"_string, "text/plain"_string);
+    }));
+
+    m_context_menu_remove_dom_node_attribute = adopt_ref(*new Action("&Remove attribute \"{}\'"sv, ContextMenuActionIDs::RemoveDOMNodeAttribute, [this]() {
+        auto context_menu_data = take_context_menu_data();
+        VERIFY(context_menu_data.attribute.has_value());
+
+        m_content_web_view.replace_dom_node_attribute(context_menu_data.dom_node_id, context_menu_data.attribute->name, {});
+    }));
+
+    auto create_child_submenu = adopt_ref(*new ContextMenu("Create child"sv));
+    create_child_submenu->add_action(*m_context_menu_create_child_element);
+    create_child_submenu->add_action(*m_context_menu_create_child_text_node);
+
+    m_dom_node_text_context_menu = adopt_ref(*new ContextMenu("DOM node text context menu"sv));
+    m_dom_node_text_context_menu->add_action(*m_context_menu_edit_dom_node);
+    m_dom_node_text_context_menu->add_action(*m_context_menu_copy_dom_node);
+    m_dom_node_text_context_menu->add_separator();
+    m_dom_node_text_context_menu->add_action(*m_context_menu_delete_dom_node);
+
+    m_dom_node_tag_context_menu = adopt_ref(*new ContextMenu("DOM node tag context menu"sv));
+    m_dom_node_tag_context_menu->add_action(*m_context_menu_edit_dom_node);
+    m_dom_node_tag_context_menu->add_separator();
+    m_dom_node_tag_context_menu->add_action(*m_context_menu_add_dom_node_attribute);
+    m_dom_node_tag_context_menu->add_submenu(create_child_submenu);
+    m_dom_node_tag_context_menu->add_action(*m_context_menu_clone_dom_node);
+    m_dom_node_tag_context_menu->add_action(*m_context_menu_delete_dom_node);
+    m_dom_node_tag_context_menu->add_separator();
+    m_dom_node_tag_context_menu->add_action(*m_context_menu_copy_dom_node);
+    m_dom_node_tag_context_menu->add_action(*m_context_menu_screenshot_dom_node);
+
+    m_dom_node_attribute_context_menu = adopt_ref(*new ContextMenu("DOM node attribute context menu"sv));
+    m_dom_node_attribute_context_menu->add_action(*m_context_menu_edit_dom_node);
+    m_dom_node_attribute_context_menu->add_action(*m_context_menu_copy_dom_node_attribute_value);
+    m_dom_node_attribute_context_menu->add_action(*m_context_menu_remove_dom_node_attribute);
+    m_dom_node_attribute_context_menu->add_separator();
+    m_dom_node_attribute_context_menu->add_action(*m_context_menu_add_dom_node_attribute);
+    m_dom_node_attribute_context_menu->add_submenu(create_child_submenu);
+    m_dom_node_attribute_context_menu->add_action(*m_context_menu_clone_dom_node);
+    m_dom_node_attribute_context_menu->add_action(*m_context_menu_delete_dom_node);
+    m_dom_node_attribute_context_menu->add_separator();
+    m_dom_node_attribute_context_menu->add_action(*m_context_menu_copy_dom_node);
+    m_dom_node_attribute_context_menu->add_action(*m_context_menu_screenshot_dom_node);
 }
 
 }

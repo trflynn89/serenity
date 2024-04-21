@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Tim Flynn <trflynn89@serenityos.org>
+ * Copyright (c) 2023-2024, Tim Flynn <trflynn89@serenityos.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -11,6 +11,7 @@
 #include <AK/Vector.h>
 #include <LibGfx/Point.h>
 #include <LibWebView/Attribute.h>
+#include <LibWebView/Forward.h>
 #include <LibWebView/ViewImplementation.h>
 
 #pragma once
@@ -29,6 +30,17 @@ public:
     void select_default_node();
     void clear_selection();
 
+    enum class ContextMenuActionIDs {
+        EditDOMNode,
+        CopyDOMNode,
+        CopyDOMNodeAttributeValue,
+        RemoveDOMNodeAttribute,
+    };
+
+    ContextMenu& dom_node_text_context_menu() { return *m_dom_node_text_context_menu; }
+    ContextMenu& dom_node_tag_context_menu() { return *m_dom_node_tag_context_menu; }
+    ContextMenu& dom_node_attribute_context_menu() { return *m_dom_node_attribute_context_menu; }
+
     void context_menu_edit_dom_node();
     void context_menu_copy_dom_node();
     void context_menu_screenshot_dom_node();
@@ -45,6 +57,12 @@ public:
     Function<void(Gfx::IntPoint, String const&, Attribute const&)> on_requested_dom_node_attribute_context_menu;
 
 private:
+    struct ContextMenuData {
+        i32 dom_node_id { 0 };
+        Optional<String> tag;
+        Optional<Attribute> attribute;
+    };
+
     void load_inspector();
 
     String generate_dom_tree(JsonObject const&);
@@ -64,6 +82,9 @@ private:
     void begin_console_group(StringView label, bool start_expanded);
     void end_console_group();
 
+    ContextMenuData take_context_menu_data();
+    void initialize_context_menus();
+
     ViewImplementation& m_content_web_view;
     ViewImplementation& m_inspector_web_view;
 
@@ -73,11 +94,23 @@ private:
     bool m_inspector_loaded { false };
     bool m_dom_tree_loaded { false };
 
-    struct ContextMenuData {
-        i32 dom_node_id { 0 };
-        Optional<String> tag;
-        Optional<Attribute> attribute;
-    };
+    RefPtr<ContextMenu> m_dom_node_text_context_menu;
+    RefPtr<ContextMenu> m_dom_node_tag_context_menu;
+    RefPtr<ContextMenu> m_dom_node_attribute_context_menu;
+
+    RefPtr<Action> m_context_menu_edit_dom_node;
+    RefPtr<Action> m_context_menu_copy_dom_node;
+    RefPtr<Action> m_context_menu_clone_dom_node;
+    RefPtr<Action> m_context_menu_delete_dom_node;
+    RefPtr<Action> m_context_menu_screenshot_dom_node;
+
+    RefPtr<Action> m_context_menu_create_child_element;
+    RefPtr<Action> m_context_menu_create_child_text_node;
+
+    RefPtr<Action> m_context_menu_add_dom_node_attribute;
+    RefPtr<Action> m_context_menu_copy_dom_node_attribute_value;
+    RefPtr<Action> m_context_menu_remove_dom_node_attribute;
+
     Optional<ContextMenuData> m_context_menu_data;
 
     HashMap<int, Vector<Attribute>> m_dom_node_attributes;

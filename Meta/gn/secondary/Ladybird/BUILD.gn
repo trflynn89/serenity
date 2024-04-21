@@ -89,6 +89,7 @@ executable("ladybird_executable") {
       "Qt/Application.cpp",
       "Qt/AutoComplete.cpp",
       "Qt/BrowserWindow.cpp",
+      "Qt/ContextMenu.cpp",
       "Qt/EventLoopImplementationQt.cpp",
       "Qt/EventLoopImplementationQtEventTarget.cpp",
       "Qt/Icon.cpp",

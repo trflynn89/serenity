@@ -117,6 +117,7 @@ if (ENABLE_QT)
         Qt/Application.cpp
         Qt/AutoComplete.cpp
         Qt/BrowserWindow.cpp
+        Qt/ContextMenu.cpp
         Qt/EventLoopImplementationQt.cpp
         Qt/EventLoopImplementationQtEventTarget.cpp
         Qt/Icon.cpp
@@ -124,11 +125,11 @@ if (ENABLE_QT)
         Qt/LocationEdit.cpp
         Qt/Settings.cpp
         Qt/SettingsDialog.cpp
+        Qt/StringUtils.cpp
         Qt/Tab.cpp
         Qt/TabBar.cpp
         Qt/TaskManagerWindow.cpp
         Qt/TVGIconEngine.cpp
-        Qt/StringUtils.cpp
         Qt/WebContentView.cpp
         Qt/ladybird.qrc
         Qt/main.cpp

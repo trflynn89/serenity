@@ -118,6 +118,7 @@ shared_library("LibWebView") {
   ]
   sources = [
     "Attribute.cpp",
+    "ContextMenu.cpp",
     "CookieJar.cpp",
     "Database.cpp",
     "InspectorClient.cpp",
