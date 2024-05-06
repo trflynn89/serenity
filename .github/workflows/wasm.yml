@@ -1,5 +1,5 @@
 name: Build Wasm Modules
-on: [ push, pull_request ]
+on: [ push ]
 
 env:
   SERENITY_SOURCE_DIR: ${{ github.workspace }}

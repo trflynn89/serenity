@@ -1,6 +1,6 @@
 name: Discord notifications
 
-on: [push, pull_request_target]
+on: [push]
 
 jobs:
   notify_discord:

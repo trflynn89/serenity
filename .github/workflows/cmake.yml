@@ -1,6 +1,6 @@
 name: Build, lint, and test
 
-on: [push, pull_request]
+on: [push]
 
 env:
   # Don't mix these up!
