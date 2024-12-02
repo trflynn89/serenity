@@ -60,6 +60,10 @@ OutOfProcessWebView::OutOfProcessWebView()
         finish_handling_key_event(event);
     };
 
+    on_finish_handling_drag_event = [this](auto const& event) {
+        finish_handling_drag_event(event);
+    };
+
     on_request_worker_agent = []() {
         auto worker_client = MUST(Web::HTML::WebWorkerClient::try_create());
         return worker_client->dup_socket();
@@ -282,6 +286,35 @@ void OutOfProcessWebView::hide_event(GUI::HideEvent&)
     set_system_visibility_state(false);
 }
 
+void OutOfProcessWebView::drag_enter_event(GUI::DragEvent& event)
+{
+    if (!event.mime_data().has_urls())
+        return;
+
+    enqueue_native_event(Web::DragEvent::Type::DragStart, event);
+    event.accept();
+}
+
+void OutOfProcessWebView::drag_move_event(GUI::DragEvent& event)
+{
+    enqueue_native_event(Web::DragEvent::Type::DragMove, event);
+    event.accept();
+}
+
+void OutOfProcessWebView::drag_leave_event(GUI::Event&)
+{
+    Web::DragEvent event {};
+    event.type = Web::DragEvent::Type::DragEnd;
+
+    enqueue_input_event(move(event));
+}
+
+void OutOfProcessWebView::drop_event(GUI::DropEvent& event)
+{
+    enqueue_native_event(Web::DragEvent::Type::Drop, event);
+    event.accept();
+}
+
 void OutOfProcessWebView::enqueue_native_event(Web::MouseEvent::Type type, GUI::MouseEvent const& event)
 {
     auto position = to_content_position(event.position()).to_type<Web::DevicePixels>();
@@ -293,6 +326,54 @@ void OutOfProcessWebView::enqueue_native_event(Web::MouseEvent::Type type, GUI::
     auto wheel_delta_y = event.wheel_delta_y() * SCROLL_STEP_SIZE;
 
     enqueue_input_event(Web::MouseEvent { type, position, screen_position, static_cast<Web::UIEvents::MouseButton>(to_underlying(event.button())), static_cast<Web::UIEvents::MouseButton>(event.buttons()), static_cast<KeyModifier>(event.modifiers()), wheel_delta_x, wheel_delta_y, nullptr });
+}
+
+struct DragData : Web::ChromeInputData {
+    explicit DragData(GUI::DropEvent const& event)
+        : event(make<GUI::DropEvent>(event))
+    {
+    }
+
+    NonnullOwnPtr<GUI::DropEvent> event;
+};
+
+void OutOfProcessWebView::enqueue_native_event(Web::DragEvent::Type type, GUI::DropEvent const& event)
+{
+    auto position = to_content_position(event.position()).to_type<Web::DevicePixels>();
+    auto screen_position = (event.position() + (window()->position() + relative_position())).to_type<Web::DevicePixels>();
+
+    Vector<Web::HTML::SelectedFile> files;
+    OwnPtr<DragData> chrome_data;
+
+    auto button = static_cast<Web::UIEvents::MouseButton>(to_underlying(event.button()));
+    auto buttons = static_cast<Web::UIEvents::MouseButton>(event.buttons());
+    auto modifiers = static_cast<Web::UIEvents::KeyModifier>(event.modifiers());
+
+    if (type == Web::DragEvent::Type::DragStart) {
+        VERIFY(event.mime_data().has_urls());
+
+        for (auto const& url : event.mime_data().urls()) {
+            auto file_path = URL::percent_decode(url.serialize_path());
+
+            if (auto file = Web::HTML::SelectedFile::from_file_path(file_path); file.is_error())
+                warnln("Unable to open file {}: {}", file_path, file.error());
+            else
+                files.append(file.release_value());
+        }
+    } else if (type == Web::DragEvent::Type::Drop) {
+        chrome_data = make<DragData>(event);
+    }
+
+    enqueue_input_event(Web::DragEvent { type, position, screen_position, button, buttons, modifiers, move(files), move(chrome_data) });
+}
+
+void OutOfProcessWebView::finish_handling_drag_event(Web::DragEvent const& event)
+{
+    if (event.type != Web::DragEvent::Type::Drop)
+        return;
+
+    // FIXME: Implement opening the event URLs in the Browser.
+    [[maybe_unused]] auto const& chrome_data = verify_cast<DragData>(*event.chrome_data);
 }
 
 struct KeyData : Web::ChromeInputData {
