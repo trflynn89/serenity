@@ -14,28 +14,16 @@ jobs:
     strategy:
       fail-fast: false
 
-    permissions:
-      contents: write
-
     steps:
-      # The BUGGIEBOT_TOKEN is not available on PRs from forks. See:
-      # https://github.com/actions/checkout/issues/298#issuecomment-664976337
       - name: Checkout SerenityOS/serenity
         uses: actions/checkout@v6
-        if: github.repository == github.event.pull_request.head.repo.full_name
-        with:
-          token: ${{ secrets.BUGGIEBOT_TOKEN }}
-
-      - name: Checkout SerenityOS/serenity
-        uses: actions/checkout@v6
-        if: github.repository != github.event.pull_request.head.repo.full_name
 
       - name: Checkout SerenityOS/libjs-data libjs-wasm
         uses: actions/checkout@v6
         with:
-          repository: SerenityOS/libjs-data
           path: libjs-data
           ref: libjs-wasm
+          repository: SerenityOS/libjs-data
 
       - name: "Set up environment"
         uses: ./.github/actions/setup
@@ -109,8 +97,9 @@ jobs:
           echo 'Module.SERENITYOS_COMMIT = "${{ github.sha }}";' >> ${{ github.workspace }}/libjs-data/libjs.js
           tar --exclude='.[^/]*' -czvf libjs-wasm.tar.gz -C ${{ github.workspace }}/libjs-data .
 
+      # FIXME: Use tagged release if a version newer than v4.7.4 comes out.
       - name: Deploy to GitHub
-        uses: JamesIves/github-pages-deploy-action@v4.7.4
+        uses: JamesIves/github-pages-deploy-action@f33629c51677254ab3ad6db5935804de9d93aa0b
         if: github.ref == 'refs/heads/master'
         with:
           git-config-name: BuggieBot
